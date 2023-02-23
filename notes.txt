@@ -1,0 +1,22 @@
+TODO:
+- what if an object falls within another object and becomes hidden and can't be selected?
+	- be able to hide/show objects
+- movement is still a bit buggy -> movement is dependent on axes, which is affected by rotation
+	- base movement on object's forward vector? (e.g. use forward vector to determine which way along axis to move)
+- modify trackball (can we lock/restrict axis for movement?). it's kinda annoying as it is currently.
+- be able to adjust lighting properties other than position (e.g. color as well)
+- explore different shaders
+- get shadows working
+- improve scaling ux (be able to specify a value, not just have a slider)
+- be able to change visibility of objects in scene
+- be able to apply image texture to walls
+- objects that have multiple meshes should be grouped into one object (e.g. vending machine)
+
+todo models:
+- wall shelves
+- wall hooks for clothes
+- keyboard
+- instruments (e.g. trumpet, guitar)
+- ceiling fan
+- more chair options
+- rug

@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+    <head>
+        <title> room designer </title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+        <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r120/three.min.js" integrity="sha512-kgjZw3xjgSUDy9lTU085y+UCVPz3lhxAtdOVkcO4O2dKl2VSBcNsQ9uMg/sXIM4SoOmCiYfyFO/n1/3GSXZtSg==" crossorigin="anonymous"></script>
+        <script src='src/GLTFLoader.js'></script>
+        <script src='src/TrackballControls.js'></script>
+        <script src='src/libgif.js'></script>
+    </head>
+    
+    <style>
+        body, button {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+        }
+        
+        body h1, p {
+            text-align: center;
+        }
+        
+        #modelCanvas {
+            position: relative;
+            display: block;
+            margin: 0 auto;
+            height: 80vh;
+            width: 50vw;
+        }
+        
+        #container {
+            display: flex;
+            gap: 3%;
+        }
+        
+        #selectExample {
+            margin-left: 12px;
+        }
+        
+    </style>
+    
+    <body>
+        <h1> room designer </h1>
+        <p>instructions: add objects to the scene and place them however you like! adding an object or clicking the 'select model' button and then clicking on an object sets the currently selected object. to move the currently selected object, click the 'toggle object move/rotate' button and then click and drag the object (you can use your mouse wheel to also rotate the object). do note that whenever adding a new object, you will most likely have to scale it.</p>
+        <div id='container'>
+            <div id='controls'>
+                <div id='buttons'>
+                    <div>
+                        <button id='addFloor'> add floor </button>
+                        <button id='addWall'> add wall </button>
+                        <!-- <button id='addSphere'> add sphere </button> -->
+                        <button id='addPoster'> add poster </button>
+                        <select id='selectModelToAdd'>
+                            <option class='modelOptions' value='desk'>desk</option>
+                            <option class='modelOptions' value='laptop'>laptop</option>
+                            <option class='modelOptions' value='computer'>computer</option>
+                            <option class='modelOptions' value='computer-monitor'>computer monitor</option>
+                            <option class='modelOptions' value='bed'>bed</option>
+                            <option class='modelOptions' value='chair'>chair</option>
+                            <option class='modelOptions' value='bookshelf'>bookshelf</option>
+                            <option class='modelOptions' value='closet'>closet</option>
+                            <option class='modelOptions' value='dresser'>dresser</option>
+                            <option class='modelOptions' value='desklamp'>desklamp</option>
+                            <option class='modelOptions' value='television'>TV</option>
+                            <option class='modelOptions' value='wastebasket'>wastebasket</option>
+                            <option class='modelOptions' value='window1'>window 1</option>
+                            <option class='modelOptions' value='window2'>window 2</option>
+                            <!--<option class='modelOptions' value='vending-machine'>vending machine</option>-->
+                        </select>
+                        <button id='addModel'>add</button>
+                    </div>
+                    <br />
+                    <div>
+                        <button id='toggleGrids'> toggle grids </button>
+                        <!--<button id='toggleLightHelpers'> toggle light helpers </button>-->
+                        <button id='lightControlBtn'> light controls </button>
+                        <button id='importModel'> import object </button>
+                        <button id='selectModel'> select object </button>
+                    </div>
+                    <br />
+                    <button id='save'> save project </button>
+                    <button id='import'> import project </button>
+                    <select id='selectExample'>
+                        <option class='exampleOptions' value='test-room-designer'>example1</option>
+                        <option class='exampleOptions' value='testing-room-designer'>example2</option>
+                        <option class='exampleOptions' value='test-gif-room-designer'>gif poster test</option>
+                    </select>
+                    <button id='selectExampleBtn'>load</button>
+                </div>
+                
+                <br />
+                <hr />
+                <br />
+                
+                <div id='currSelectedMeshControls'>
+                </div>
+                <div id='colorChangeArea'>
+                </div>
+                <div id='lightControls'>
+                </div>
+            </div>
+            <div id='display'>
+                <canvas id="modelCanvas"></canvas>
+            </div>
+        </div>
+    </body>
+    
+    <script src='src/utils.js'></script>
+    <script src='src/index.js'></script>
+</html>
