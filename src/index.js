@@ -86,7 +86,7 @@ function addImagePlane(parameters=null){
     const planeGeometry = new THREE.PlaneGeometry(10, 13, 1, 1);
     
     // TODO: if gif, use canvastexture
-    const texture = new THREE.TextureLoader().load('../examples/cat2.png');
+    const texture = new THREE.TextureLoader().load('examples/cat2.png');
     
     const planeMaterial = new THREE.MeshLambertMaterial({map: texture, side: THREE.DoubleSide});
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
