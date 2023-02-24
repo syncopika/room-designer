@@ -1,5 +1,3 @@
-//const loader = new THREE.GLTFLoader();
-//const textureLoader = new THREE.TextureLoader();
 
 const container = document.getElementById("modelCanvas");
 const renderer = new THREE.WebGLRenderer({antialias: true, canvas: container});
@@ -37,14 +35,6 @@ let wallExists = false;
 let floorExists = false;
 
 setupLights(scene, lights, lightHelpers);
-
-/*
-document.getElementById('toggleLightHelpers').addEventListener('click', () => {
-    lightHelpers.forEach(lightHelper => {
-        lightHelper.visible = !lightHelper.visible;
-    });
-});
-*/
 
 // set up grid
 // https://stackoverflow.com/questions/56029083/change-width-and-height-of-a-gridhelper-in-three-js
@@ -253,6 +243,13 @@ function selectMesh(ptrEvt){
             if(intersected.object.name && !intersected.object.name.includes("grid")){
                 populateCurrSelectedMeshControls(intersected.object);
                 selectedObject = intersected.object;
+                
+                // indicate which mesh got selected by flashing wireframe
+                selectedObject.material.wireframe = true;
+                setTimeout(() => {
+                    selectedObject.material.wireframe = false;
+                }, 300);
+                
                 break;
             }
         }
@@ -538,13 +535,43 @@ function populateCurrSelectedMeshControls(mesh){
         container.appendChild(scaleAxisControllerInput);
     });
     
+    // checkbox for toggling helper axes
+    container.appendChild(document.createElement('br'));
+    container.appendChild(document.createElement('br'));
+    
+    const toggleHelperAxes = document.createElement('input');
+    toggleHelperAxes.type = "checkbox";
+    toggleHelperAxes.name = "toggleHelperAxes";
+    toggleHelperAxes.checked = mesh.axesHelper ? mesh.axesHelper.visible === true : false;
+    toggleHelperAxes.addEventListener('input', (evt) => {
+        const showAxes = evt.target.checked;
+        if(!mesh.axesHelper){
+            mesh.axesHelper = new THREE.AxesHelper(8);
+            mesh.add(mesh.axesHelper);
+        }
+        mesh.axesHelper.visible = showAxes;
+    });
+    
+    const toggleHelperAxesLabel = document.createElement('label');
+    toggleHelperAxesLabel.textContent = "toggle helper axes";
+    toggleHelperAxesLabel.for = "toggleHelperAxes";
+    
+    container.appendChild(toggleHelperAxesLabel);
+    container.appendChild(toggleHelperAxes);
+    
+    // delete option
     const deleteBtn = document.createElement('button');
     deleteBtn.id = "delete";
     deleteBtn.textContent = "delete";
     deleteBtn.style.color = "#ff0000";
     deleteBtn.addEventListener('click', () => {
-        if(objects[selectedObject]) delete objects[selectedObject];
-        selectedObject.parent.remove(selectedObject);
+        if(mesh.name !== selectedObject.name){
+            console.log("mesh to delete doesn't match selectedObject!");
+            return;
+        }
+        
+        if(objects[mesh.name]) delete objects[mesh.name];
+        mesh.parent.remove(mesh);
         selectedObject = null;
         
         Array.from(container.children).forEach(x => {
@@ -565,7 +592,7 @@ function populateCurrSelectedMeshControls(mesh){
     });
     
     // if it's a poster, allow the user to change image
-    // TODO: if it's a poster, allow the user to add a frame?
+    // TODO: if it's a poster, allow the user to add a frame for it?
     if(mesh.name.includes("poster")){
         container.appendChild(document.createElement('br'));
         container.appendChild(document.createElement('br'));
@@ -578,7 +605,6 @@ function populateCurrSelectedMeshControls(mesh){
         container.appendChild(loadingGifText);
         
         changeImageBtn.addEventListener('click', (evt) => {
-            // https://stackoverflow.com/questions/934012/get-image-data-url-in-javascript
             const input = document.createElement('input');
             input.type = 'file';
             input.addEventListener('change', getFile, false);
@@ -593,7 +619,7 @@ function populateCurrSelectedMeshControls(mesh){
                     console.log("not a valid image");
                     return;
                 }
-                //after reader has loaded file, put the data in the image object.
+                
                 reader.onloadend = function(){
                     updatePosterImage(mesh, reader.result);
                 };
