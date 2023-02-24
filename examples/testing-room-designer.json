@@ -17,7 +17,7 @@
       "y": 1,
       "z": 1
     },
-    "image": "http://localhost:8080/cat2.png"
+    "image": "examples/cat2.png"
   },
   {
     "name": "desk",
