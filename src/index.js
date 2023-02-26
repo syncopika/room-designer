@@ -151,6 +151,13 @@ function processMesh(mesh, modelName, parameters){
             if(parameters.scale){
                 mesh.scale.copy(parameters.scale);
             }
+            if(parameters.color){
+                mesh.material.color = new THREE.Color(
+                    parameters.color.r,
+                    parameters.color.g,
+                    parameters.color.b
+                )
+            }
         }
         
         addNewObject(mesh, modelName, objects);
@@ -168,6 +175,17 @@ function processGltf(name, parameters){
         gltf.scene.traverse((child) => {
             if(child.type === "Mesh" || child.type === "SkinnedMesh"){
                 currMeshes[child.name] = {mesh: null, texture: null};
+                
+                /* for MeshToonMaterial
+                const fiveTone = new THREE.DataTexture(
+                  Uint8Array.from([0, 0, 0, 64, 64, 64, 128, 128, 128, 192, 192, 192, 255, 255, 255]),
+                  5,
+                  1,
+                  THREE.RGBFormat
+                );
+                fiveTone.needsUpdate = true;
+                const material = new THREE.MeshToonMaterial({color: 0x049ef4, gradientMap: fiveTone}); //child.material.clone();
+                */
                 
                 const material = child.material.clone();
                 const geometry = child.geometry.clone();
@@ -243,7 +261,7 @@ function selectMesh(ptrEvt){
     
     const intersects = raycaster.intersectObjects(scene.children);
     if(intersects.length > 0){
-        for(let intersected of intersects){
+        for(const intersected of intersects){
             if(intersected.object.name && !intersected.object.name.includes("grid")){
                 populateCurrSelectedMeshControls(intersected.object);
                 selectedObject = intersected.object;
@@ -580,6 +598,7 @@ function populateCurrSelectedMeshControls(mesh){
         
         Array.from(container.children).forEach(x => {
             if(x.id === "toggleMoveObject" && moveObject){
+                // TODO: maybe have a helper function that just resets all global variables relating to the currently-selected object?
                 x.click(); // set moveobject to false again before switching over to new object
             }
             x.parentNode.removeChild(x)
@@ -590,8 +609,10 @@ function populateCurrSelectedMeshControls(mesh){
         renderer.domElement.removeEventListener('pointerup', moveModelStop);
         renderer.domElement.removeEventListener('wheel', rotateWheel);
         
-        for(let child of document.getElementById("colorChangeArea").children){
-            child.parentNode.removeChild(child);
+        // also clear color change area
+        const colorChangeArea = document.getElementById("colorChangeArea");
+        while(colorChangeArea.firstChild){
+            colorChangeArea.removeChild(colorChangeArea.firstChild);
         }
     });
     
@@ -633,35 +654,29 @@ function populateCurrSelectedMeshControls(mesh){
         container.appendChild(changeImageBtn);
     }
     
-    if(mesh.name.includes("wall") || mesh.name.includes("floor")){
-        // add some color change options
-        const colorChangeArea = document.getElementById("colorChangeArea");
-        
-        const changeWallColorBtn = document.createElement('button');
-        changeWallColorBtn.textContent = "change wall color";
-        
-        const color = mesh.material.color;
-        const currColor = document.createElement("input");
-        currColor.id = "colorInput";
-        currColor.type = "text";
-        currColor.value = `rgb(${Math.floor(color.r * 255)}, ${Math.floor(color.g * 255)}, ${Math.floor(color.b * 255)})`;
-        currColor.style.border = `2px solid ${currColor.value}`;
-        
-        changeWallColorBtn.addEventListener('click', () => {
-            const selectedColor = currColor.value.match(/([0-9]+)/g);
-            mesh.material.color.r = selectedColor[0] / 255;
-            mesh.material.color.g = selectedColor[1] / 255;
-            mesh.material.color.b = selectedColor[2] / 255;
-        });
-        
-        // add color picker
-        const colorWheel = createColorPicker();
-        
-        colorChangeArea.appendChild(colorWheel);
-        colorChangeArea.appendChild(document.createElement('br'));
-        colorChangeArea.appendChild(currColor);
-        colorChangeArea.appendChild(changeWallColorBtn);
-    }
+    // add color change option
+    const colorChangeArea = document.getElementById("colorChangeArea");
+    
+    const changeColorBtn = document.createElement('button');
+    changeColorBtn.textContent = "change color";
+    
+    const color = mesh.material.color;
+    const currColor = createColorInputBox(color);
+    
+    changeColorBtn.addEventListener('click', () => {
+        const selectedColor = currColor.value.match(/([0-9]+)/g);
+        mesh.material.color.r = selectedColor[0] / 255;
+        mesh.material.color.g = selectedColor[1] / 255;
+        mesh.material.color.b = selectedColor[2] / 255;
+    });
+    
+    // add color picker
+    const colorWheel = createColorPicker(currColor);
+    
+    colorChangeArea.appendChild(colorWheel);
+    colorChangeArea.appendChild(document.createElement('br'));
+    colorChangeArea.appendChild(currColor);
+    colorChangeArea.appendChild(changeColorBtn);
 
     container.appendChild(document.createElement('br'));
     container.appendChild(document.createElement('br'));
@@ -702,7 +717,7 @@ function save(){
     
     const savedData = [];
     
-    for(let light of lights){
+    for(const light of lights){
         savedData.push({
             type: light.type,
             color: {
@@ -716,13 +731,18 @@ function save(){
         });
     }
     
-    for(let obj in objects){
+    for(const obj in objects){
       const theMesh = objects[obj];
       const objData = {
         "name": theMesh.modelName,
         "position": theMesh.mesh.position,
         "rotation": theMesh.mesh.rotation,
         "scale": theMesh.mesh.scale,
+        "color": {
+            r: theMesh.mesh.material.color.r,
+            g: theMesh.mesh.material.color.g,
+            b: theMesh.mesh.material.color.b,
+        }
       };
       
       if(theMesh.modelName === "poster"){
@@ -750,7 +770,7 @@ document.getElementById("save").addEventListener('click', save);
 
 function loadObjectsFromData(data){
     // clear scene first
-    for(let obj in objects){
+    for(const obj in objects){
         const mesh = objects[obj].mesh;
         scene.remove(mesh);
         delete objects[obj];
@@ -782,6 +802,7 @@ function loadObjectsFromData(data){
                 position: obj.position, 
                 rotation: obj.rotation,
                 scale: obj.scale,
+                color: obj.color,
             });
         }else if(obj.name === "poster"){
             const newPoster = addImagePlane({
@@ -793,10 +814,12 @@ function loadObjectsFromData(data){
             updatePosterImage(newPoster, obj.image);
         }else if(obj.type && obj.type.includes("Light")){
             if(obj.type === "DirectionalLight"){
+                // TODO: maybe create a helper function to create a new dir light and do the additional stuff like add to the lights array and save the original position
                 const newDirLight = new THREE.DirectionalLight();
                 newDirLight.position.copy(obj.position);
                 newDirLight.rotation.copy(obj.rotation);
                 newDirLight.color = new THREE.Color(obj.color.r, obj.color.g, obj.color.b);
+                saveOriginalPos(newDirLight);
                 scene.add(newDirLight);
                 lights.push(newDirLight);
                 
@@ -860,7 +883,7 @@ function animate(){
     controls.update();
     
     // handle any poster gifs
-    for(let obj in objects){
+    for(const obj in objects){
         if(obj.includes("poster")){
             handleAnimatedPoster(objects[obj].mesh);
         }

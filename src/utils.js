@@ -308,7 +308,7 @@ function addNewObject(mesh, modelName, objects){
     color pciker
 
 ****/
-function createColorPicker(){
+function createColorPicker(colorInput){
     const colorWheel = document.createElement('canvas');
     colorWheel.id = "colorWheel";
     colorWheel.setAttribute('width', 150);
@@ -346,12 +346,26 @@ function createColorPicker(){
         const colorPicked = colorWheel.getContext('2d', {willReadFrequently: true}).getImageData(x, y, 1, 1).data;
         const pickedColor = 'rgb(' + colorPicked[0] + ',' + colorPicked[1] + ',' + colorPicked[2] + ')';
         
-        // assumes existence of text edit box with id as colorInput
-        document.getElementById('colorInput').value = pickedColor;
-        document.getElementById('colorInput').style.border = `2px solid ${pickedColor}`;
+        // assumes colorInput is an input of type 'text'
+        colorInput.value = pickedColor;
+        colorInput.style.border = `2px solid ${pickedColor}`;
     });
     
     return colorWheel;
+}
+
+/***
+
+    color input textbox
+
+***/
+function createColorInputBox(defaultColor){
+    const currColor = document.createElement("input");
+    currColor.id = "colorInput";
+    currColor.type = "text";
+    currColor.value = `rgb(${Math.floor(defaultColor.r * 255)}, ${Math.floor(defaultColor.g * 255)}, ${Math.floor(defaultColor.b * 255)})`;
+    currColor.style.border = `2px solid ${currColor.value}`;
+    return currColor;
 }
 
 function createLightsControls(lightsArray, container, turnOn){
