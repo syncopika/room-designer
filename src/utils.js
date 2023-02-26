@@ -14,10 +14,6 @@ function saveOriginalPos(light){
 
 // https://discourse.threejs.org/t/solved-glb-model-is-very-dark/6258
 function setupLights(scene, lights, lightHelpers){
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
-    hemiLight.position.set(0, 300, 0);
-    scene.add(hemiLight);
-
     const dirLight = new THREE.DirectionalLight(0xffffff);
     dirLight.position.set(0, 80, 0);
     const helper1 = new THREE.DirectionalLightHelper(dirLight, 5, 0xff0000);
@@ -347,7 +343,7 @@ function createColorPicker(){
     colorWheel.addEventListener('mousedown', (evt) => {
         const x = evt.offsetX;
         const y = evt.offsetY;
-        const colorPicked = (document.getElementById(evt.target.id).getContext('2d')).getImageData(x, y, 1, 1).data;
+        const colorPicked = colorWheel.getContext('2d', {willReadFrequently: true}).getImageData(x, y, 1, 1).data;
         const pickedColor = 'rgb(' + colorPicked[0] + ',' + colorPicked[1] + ',' + colorPicked[2] + ')';
         
         // assumes existence of text edit box with id as colorInput
@@ -396,8 +392,8 @@ function createLightsControls(lightsArray, container, turnOn){
         moveLightSlider.type = "range";
         moveLightSlider.id = `moveLightSlider${index}`;
         moveLightSlider.name = `moveLightSlider${index}`;
-        moveLightSlider.min = "-20";
-        moveLightSlider.max = "20";
+        moveLightSlider.min = "-100";
+        moveLightSlider.max = "100";
         moveLightSlider.value = "0";
         moveLightSlider.step = "0.5";
         

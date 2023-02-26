@@ -41,6 +41,10 @@ setupLights(scene, lights, lightHelpers);
 const size = 10;
 const divisions = 10;
 
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
+hemiLight.position.set(0, 300, 0);
+scene.add(hemiLight);
+
 setupFloorPlan2(grids);
 
 
@@ -698,6 +702,20 @@ function save(){
     
     const savedData = [];
     
+    for(let light of lights){
+        savedData.push({
+            type: light.type,
+            color: {
+                r: light.color.r,
+                g: light.color.g,
+                b: light.color.b,
+            },
+            position: light.position,
+            rotation: light.rotation,
+            intensity: light.intensity,
+        });
+    }
+    
     for(let obj in objects){
       const theMesh = objects[obj];
       const objData = {
@@ -738,12 +756,31 @@ function loadObjectsFromData(data){
         delete objects[obj];
     }
     
+    // clear all current lights
+    if(lightControl) document.getElementById('lightControlBtn').click();
+    lights.forEach(light => {
+        light.parent.remove(light);
+    });
+    lightHelpers.forEach(lh => {
+        lh.parent.remove(lh);
+        lh.dispose();
+    });
+    
+    lights = [];
+    lightHelpers = [];
+    
+    // no lights included in import so use default light setup
+    // TODO; don't assume that the only objects with type are lights?
+    if(!data[0].type){
+        setupLights(scene, lights, lightHelpers);
+    }
+    
     const objsAvailForImport = Array.from(document.querySelectorAll('.modelOptions')).map(x => x.value);
     data.forEach(obj => {
         if(objsAvailForImport.includes(obj.name)){
             getModelFromSelect(`models/${obj.name}.gltf`, obj.name, {
                 position: obj.position, 
-                rotation: obj.rotation, 
+                rotation: obj.rotation,
                 scale: obj.scale,
             });
         }else if(obj.name === "poster"){
@@ -754,6 +791,20 @@ function loadObjectsFromData(data){
                 image: obj.image,
             });
             updatePosterImage(newPoster, obj.image);
+        }else if(obj.type && obj.type.includes("Light")){
+            if(obj.type === "DirectionalLight"){
+                const newDirLight = new THREE.DirectionalLight();
+                newDirLight.position.copy(obj.position);
+                newDirLight.rotation.copy(obj.rotation);
+                newDirLight.color = new THREE.Color(obj.color.r, obj.color.g, obj.color.b);
+                scene.add(newDirLight);
+                lights.push(newDirLight);
+                
+                const helper = new THREE.DirectionalLightHelper(newDirLight, 5, 0xff0000);
+                helper.visible = false;
+                scene.add(helper);
+                lightHelpers.push(helper);
+            }
         }
     });
 }
