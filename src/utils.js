@@ -14,10 +14,6 @@ function saveOriginalPos(light){
 
 // https://discourse.threejs.org/t/solved-glb-model-is-very-dark/6258
 function setupLights(scene, lights, lightHelpers){
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
-    hemiLight.position.set(0, 300, 0);
-    scene.add(hemiLight);
-
     const dirLight = new THREE.DirectionalLight(0xffffff);
     dirLight.position.set(0, 80, 0);
     const helper1 = new THREE.DirectionalLightHelper(dirLight, 5, 0xff0000);
@@ -86,13 +82,19 @@ function addClickModelStart(ptrEvt){
     const mouseCoords = getCoordsOnMouseClick(ptrEvt);
     raycaster.setFromCamera(mouseCoords, camera);
     
-    const intersects = raycaster.intersectObjects(scene.children);
+    const intersects = raycaster.intersectObjects(scene.children, true);
     if(intersects.length > 0){
         for(let intersected of intersects){
             if(intersected.object.name && !intersected.object.name.includes("grid")){
                 startX = mouseCoords.x;
                 startY = mouseCoords.y;
-                objAcquired = intersected.object;
+                
+                if(intersected.object.parent.type === "Group"){
+                    objAcquired = intersected.object.parent;
+                }else{
+                    objAcquired = intersected.object;
+                }
+                
                 break;
             }
         }
@@ -309,10 +311,10 @@ function addNewObject(mesh, modelName, objects){
 
 /****
 
-    color pciker
+    color picker
 
 ****/
-function createColorPicker(){
+function createColorPicker(colorInput){
     const colorWheel = document.createElement('canvas');
     colorWheel.id = "colorWheel";
     colorWheel.setAttribute('width', 150);
@@ -347,15 +349,29 @@ function createColorPicker(){
     colorWheel.addEventListener('mousedown', (evt) => {
         const x = evt.offsetX;
         const y = evt.offsetY;
-        const colorPicked = (document.getElementById(evt.target.id).getContext('2d')).getImageData(x, y, 1, 1).data;
+        const colorPicked = colorWheel.getContext('2d', {willReadFrequently: true}).getImageData(x, y, 1, 1).data;
         const pickedColor = 'rgb(' + colorPicked[0] + ',' + colorPicked[1] + ',' + colorPicked[2] + ')';
         
-        // assumes existence of text edit box with id as colorInput
-        document.getElementById('colorInput').value = pickedColor;
-        document.getElementById('colorInput').style.border = `2px solid ${pickedColor}`;
+        // assumes colorInput is an input of type 'text'
+        colorInput.value = pickedColor;
+        colorInput.style.border = `2px solid ${pickedColor}`;
     });
     
     return colorWheel;
+}
+
+/***
+
+    color input textbox
+
+***/
+function createColorInputBox(defaultColor){
+    const currColor = document.createElement("input");
+    currColor.id = "colorInput";
+    currColor.type = "text";
+    currColor.value = `rgb(${Math.floor(defaultColor.r * 255)}, ${Math.floor(defaultColor.g * 255)}, ${Math.floor(defaultColor.b * 255)})`;
+    currColor.style.border = `2px solid ${currColor.value}`;
+    return currColor;
 }
 
 function createLightsControls(lightsArray, container, turnOn){
@@ -396,8 +412,8 @@ function createLightsControls(lightsArray, container, turnOn){
         moveLightSlider.type = "range";
         moveLightSlider.id = `moveLightSlider${index}`;
         moveLightSlider.name = `moveLightSlider${index}`;
-        moveLightSlider.min = "-20";
-        moveLightSlider.max = "20";
+        moveLightSlider.min = "-100";
+        moveLightSlider.max = "100";
         moveLightSlider.value = "0";
         moveLightSlider.step = "0.5";
         
@@ -481,7 +497,7 @@ function createLightsControls(lightsArray, container, turnOn){
 // handle any animated gifs used as images for posters
 // https://discourse.threejs.org/t/using-an-animated-gif-as-a-displacement-map-shaders/907/8
 function handleAnimatedPoster(poster){
-    if(poster.isGif){
+    if(poster.isGif && poster.gifLoaded){
         poster.material.needsUpdate = true;
         poster.material.map.needsUpdate = true;
     }

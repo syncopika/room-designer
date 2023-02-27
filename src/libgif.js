@@ -1,6 +1,8 @@
 /*
     from: https://github.com/buzzfeed/libgif-js/blob/master/libgif.js
+    
     edit: syncopika - I commented out stuff around lines 873-878 cause I don't need new stuff added to my DOM for my purposes.
+    also added a bunch of {willReadFrequently: true} to anywhere getContext() was used because https://stackoverflow.com/questions/74101155/chrome-warning-willreadfrequently-attribute-set-to-true
     
 	SuperGif
 
@@ -504,7 +506,7 @@
             tmpCanvas.height = h;
             tmpCanvas.style.width = w + 'px';
             tmpCanvas.style.height = h + 'px';
-            tmpCanvas.getContext('2d').setTransform(1, 0, 0, 1, 0, 0);
+            tmpCanvas.getContext('2d', {willReadFrequently: true}).setTransform(1, 0, 0, 1, 0, 0);
         };
 
         var setFrameOffset = function(frame, offset) {
@@ -612,7 +614,7 @@
         };
 
         var doImg = function (img) {
-            if (!frame) frame = tmpCanvas.getContext('2d');
+            if (!frame) frame = tmpCanvas.getContext('2d', {willReadFrequently: true});
 
             var currIdx = frames.length;
 
@@ -765,7 +767,7 @@
 
                 offset = frameOffsets[i];
 
-                tmpCanvas.getContext("2d").putImageData(frames[i].data, offset.x, offset.y);
+                tmpCanvas.getContext("2d", {willReadFrequently: true}).putImageData(frames[i].data, offset.x, offset.y);
                 ctx.globalCompositeOperation = "copy";
                 ctx.drawImage(tmpCanvas, 0, 0);
             };
@@ -860,7 +862,7 @@
 
             var div = document.createElement('div');
             canvas = document.createElement('canvas');
-            ctx = canvas.getContext('2d');
+            ctx = canvas.getContext('2d', {willReadFrequently: true});
             toolbar = document.createElement('div');
 
             tmpCanvas = document.createElement('canvas');

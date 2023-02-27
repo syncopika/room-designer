@@ -41,6 +41,10 @@ setupLights(scene, lights, lightHelpers);
 const size = 10;
 const divisions = 10;
 
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
+hemiLight.position.set(0, 300, 0);
+scene.add(hemiLight);
+
 setupFloorPlan2(grids);
 
 
@@ -130,29 +134,32 @@ function getModel(modelFilePath, name){
 }
 
 function processMesh(mesh, modelName, parameters){
-    if(!mesh.parent){
-        //const axesHelper = new THREE.AxesHelper(10);
-        //mesh.add(axesHelper);
-        mesh.receiveShadow = true;
-        mesh.castShadow = true;
-        scene.add(mesh);
-        
-        if(parameters){
-            if(parameters.position){
-                mesh.position.copy(parameters.position);
-            }
-            if(parameters.rotation){
-                mesh.rotation.copy(parameters.rotation);
-            }
-            if(parameters.scale){
-                mesh.scale.copy(parameters.scale);
-            }
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    scene.add(mesh);
+    
+    if(parameters){
+        if(parameters.position){
+            mesh.position.copy(parameters.position);
         }
-        
-        addNewObject(mesh, modelName, objects);
-        populateCurrSelectedMeshControls(mesh);
-        selectedObject = mesh;
+        if(parameters.rotation){
+            mesh.rotation.copy(parameters.rotation);
+        }
+        if(parameters.scale){
+            mesh.scale.copy(parameters.scale);
+        }
+        if(parameters.color){
+            mesh.material.color = new THREE.Color(
+                parameters.color.r,
+                parameters.color.g,
+                parameters.color.b
+            )
+        }
     }
+    
+    addNewObject(mesh, modelName, objects);
+    populateCurrSelectedMeshControls(mesh);
+    selectedObject = mesh;
     
     animate();
 }
@@ -163,31 +170,35 @@ function processGltf(name, parameters){
 
         gltf.scene.traverse((child) => {
             if(child.type === "Mesh" || child.type === "SkinnedMesh"){
-                currMeshes[child.name] = {mesh: null, texture: null};
+                /* for MeshToonMaterial
+                const fiveTone = new THREE.DataTexture(
+                  Uint8Array.from([0, 0, 0, 64, 64, 64, 128, 128, 128, 192, 192, 192, 255, 255, 255]),
+                  5,
+                  1,
+                  THREE.RGBFormat
+                );
+                fiveTone.needsUpdate = true;
+                const material = new THREE.MeshToonMaterial({color: 0x049ef4, gradientMap: fiveTone}); //child.material.clone();
+                */
                 
                 const material = child.material.clone();
                 const geometry = child.geometry.clone();
                 const obj = new THREE.Mesh(geometry, material);
-                
                 obj.name = child.name;
-                
-                currMeshes[child.name].mesh = obj;
-                
-                currModel = obj;
-                currModelTextureMesh = obj;
-                
-                //if(child.parent) console.log(child.parent);
-                if(child.parent && currMeshes[child.parent.name]){
-                    currMeshes[child.parent.name].mesh.add(obj);
-                }
                 
                 // reminder that rotation/position/scale fields are immutable: https://github.com/mrdoob/three.js/issues/8940
                 obj.rotation.copy(child.rotation);
                 obj.position.copy(child.position);
                 obj.scale.copy(child.scale);
                 
-                processMesh(obj, name, parameters);
-                
+                if(child.parent && currMeshes[child.parent.name]){
+                    currMeshes[child.parent.name].add(obj);
+                }else{
+                    currMeshes[child.name] = obj;
+                }
+
+                //processMesh(obj, name, parameters);
+
             }else if(child.type === "Object3D" && (child.name.includes("Armature") || child.name.includes("Bone"))){
                 const obj3d = new THREE.Object3D();
                 obj3d.position.copy(child.position);
@@ -195,15 +206,29 @@ function processGltf(name, parameters){
                 obj3d.scale.copy(child.scale);
                 obj3d.name = child.name;
                 
-                currMeshes[child.name] = {mesh: obj3d, texture: null};
-                
                 if(child.parent && currMeshes[child.parent.name]){
-                    currMeshes[child.parent.name].mesh.add(obj3d);
+                    currMeshes[child.parent.name].add(obj3d);
+                }else{
+                    currMeshes[child.name] = obj3d;
                 }
                 
-                processMesh(obj3d, name, parameters);
+                //processMesh(obj3d, name, parameters);
             }
         });
+
+        const meshes = Object.keys(currMeshes);
+        if(meshes.length > 1){
+            // group multiple (non-nested) meshes together
+            const group = new THREE.Group();
+            group.name = name;
+            meshes.forEach(meshName => {
+                group.add(currMeshes[meshName]);
+            });
+            processMesh(group, name, parameters);
+        }else{
+            processMesh(currMeshes[meshes[0]], name, parameters);
+        }
+
     }
 }
 
@@ -237,18 +262,25 @@ function selectMesh(ptrEvt){
     const mouseCoords = getCoordsOnMouseClick(ptrEvt);
     raycaster.setFromCamera(mouseCoords, camera);
     
-    const intersects = raycaster.intersectObjects(scene.children);
+    const intersects = raycaster.intersectObjects(scene.children, true);
     if(intersects.length > 0){
-        for(let intersected of intersects){
+        for(const intersected of intersects){
             if(intersected.object.name && !intersected.object.name.includes("grid")){
-                populateCurrSelectedMeshControls(intersected.object);
-                selectedObject = intersected.object;
+                if(intersected.object.parent.type === "Group"){
+                    selectedObject = intersected.object.parent;
+                }else{
+                    selectedObject = intersected.object;
+                }
+                
+                populateCurrSelectedMeshControls(selectedObject);
                 
                 // indicate which mesh got selected by flashing wireframe
-                selectedObject.material.wireframe = true;
-                setTimeout(() => {
-                    selectedObject.material.wireframe = false;
-                }, 300);
+                if(intersected.object.parent.type !== "Group"){
+                    selectedObject.material.wireframe = true;
+                    setTimeout(() => {
+                        selectedObject.material.wireframe = false;
+                    }, 300);
+                }
                 
                 break;
             }
@@ -319,6 +351,7 @@ function updatePosterImage(mesh, imageUrl){
         loadGifMsg.textContent = "loading gif, this might take a bit...";
         
         mesh.isGif = true;
+        mesh.gifLoaded = false;
         mesh.gifImageData = imageUrl;
         
         // using libgif.js
@@ -333,6 +366,7 @@ function updatePosterImage(mesh, imageUrl){
             const superGif = new SuperGif({gif: img});
             
             superGif.load(() => {
+                mesh.gifLoaded = true;
                 mesh.material.map = new THREE.CanvasTexture(superGif.get_canvas());
                 loadGifMsg.textContent = "";
                 //superGif.play();
@@ -343,7 +377,6 @@ function updatePosterImage(mesh, imageUrl){
         mesh.material.map = newTexture;
         mesh.isGif = false;
     }
-    mesh.material.needsUpdate = true;
 }
 
 function toggleObjMoveAndRotate(evt){
@@ -576,6 +609,7 @@ function populateCurrSelectedMeshControls(mesh){
         
         Array.from(container.children).forEach(x => {
             if(x.id === "toggleMoveObject" && moveObject){
+                // TODO: maybe have a helper function that just resets all global variables relating to the currently-selected object?
                 x.click(); // set moveobject to false again before switching over to new object
             }
             x.parentNode.removeChild(x)
@@ -586,8 +620,10 @@ function populateCurrSelectedMeshControls(mesh){
         renderer.domElement.removeEventListener('pointerup', moveModelStop);
         renderer.domElement.removeEventListener('wheel', rotateWheel);
         
-        for(let child of document.getElementById("colorChangeArea").children){
-            child.parentNode.removeChild(child);
+        // also clear color change area
+        const colorChangeArea = document.getElementById("colorChangeArea");
+        while(colorChangeArea.firstChild){
+            colorChangeArea.removeChild(colorChangeArea.firstChild);
         }
     });
     
@@ -629,21 +665,17 @@ function populateCurrSelectedMeshControls(mesh){
         container.appendChild(changeImageBtn);
     }
     
-    if(mesh.name.includes("wall") || mesh.name.includes("floor")){
-        // add some color change options
+    // add color change option
+    if(mesh.material && mesh.material.color){
         const colorChangeArea = document.getElementById("colorChangeArea");
         
-        const changeWallColorBtn = document.createElement('button');
-        changeWallColorBtn.textContent = "change wall color";
+        const changeColorBtn = document.createElement('button');
+        changeColorBtn.textContent = "change color";
         
         const color = mesh.material.color;
-        const currColor = document.createElement("input");
-        currColor.id = "colorInput";
-        currColor.type = "text";
-        currColor.value = `rgb(${Math.floor(color.r * 255)}, ${Math.floor(color.g * 255)}, ${Math.floor(color.b * 255)})`;
-        currColor.style.border = `2px solid ${currColor.value}`;
+        const currColor = createColorInputBox(color);
         
-        changeWallColorBtn.addEventListener('click', () => {
+        changeColorBtn.addEventListener('click', () => {
             const selectedColor = currColor.value.match(/([0-9]+)/g);
             mesh.material.color.r = selectedColor[0] / 255;
             mesh.material.color.g = selectedColor[1] / 255;
@@ -651,12 +683,12 @@ function populateCurrSelectedMeshControls(mesh){
         });
         
         // add color picker
-        const colorWheel = createColorPicker();
+        const colorWheel = createColorPicker(currColor);
         
         colorChangeArea.appendChild(colorWheel);
         colorChangeArea.appendChild(document.createElement('br'));
         colorChangeArea.appendChild(currColor);
-        colorChangeArea.appendChild(changeWallColorBtn);
+        colorChangeArea.appendChild(changeColorBtn);
     }
 
     container.appendChild(document.createElement('br'));
@@ -698,13 +730,32 @@ function save(){
     
     const savedData = [];
     
-    for(let obj in objects){
+    for(const light of lights){
+        savedData.push({
+            type: light.type,
+            color: {
+                r: light.color.r,
+                g: light.color.g,
+                b: light.color.b,
+            },
+            position: light.position,
+            rotation: light.rotation,
+            intensity: light.intensity,
+        });
+    }
+    
+    for(const obj in objects){
       const theMesh = objects[obj];
       const objData = {
         "name": theMesh.modelName,
         "position": theMesh.mesh.position,
         "rotation": theMesh.mesh.rotation,
         "scale": theMesh.mesh.scale,
+        "color": {
+            r: theMesh.mesh.material.color.r,
+            g: theMesh.mesh.material.color.g,
+            b: theMesh.mesh.material.color.b,
+        }
       };
       
       if(theMesh.modelName === "poster"){
@@ -732,10 +783,29 @@ document.getElementById("save").addEventListener('click', save);
 
 function loadObjectsFromData(data){
     // clear scene first
-    for(let obj in objects){
+    for(const obj in objects){
         const mesh = objects[obj].mesh;
         scene.remove(mesh);
         delete objects[obj];
+    }
+    
+    // clear all current lights
+    if(lightControl) document.getElementById('lightControlBtn').click();
+    lights.forEach(light => {
+        light.parent.remove(light);
+    });
+    lightHelpers.forEach(lh => {
+        lh.parent.remove(lh);
+        lh.dispose();
+    });
+    
+    lights = [];
+    lightHelpers = [];
+    
+    // no lights included in import so use default light setup
+    // TODO; don't assume that the only objects with type are lights?
+    if(!data[0].type){
+        setupLights(scene, lights, lightHelpers);
     }
     
     const objsAvailForImport = Array.from(document.querySelectorAll('.modelOptions')).map(x => x.value);
@@ -743,8 +813,9 @@ function loadObjectsFromData(data){
         if(objsAvailForImport.includes(obj.name)){
             getModelFromSelect(`models/${obj.name}.gltf`, obj.name, {
                 position: obj.position, 
-                rotation: obj.rotation, 
+                rotation: obj.rotation,
                 scale: obj.scale,
+                color: obj.color,
             });
         }else if(obj.name === "poster"){
             const newPoster = addImagePlane({
@@ -754,6 +825,22 @@ function loadObjectsFromData(data){
                 image: obj.image,
             });
             updatePosterImage(newPoster, obj.image);
+        }else if(obj.type && obj.type.includes("Light")){
+            if(obj.type === "DirectionalLight"){
+                // TODO: maybe create a helper function to create a new dir light and do the additional stuff like add to the lights array and save the original position
+                const newDirLight = new THREE.DirectionalLight();
+                newDirLight.position.copy(obj.position);
+                newDirLight.rotation.copy(obj.rotation);
+                newDirLight.color = new THREE.Color(obj.color.r, obj.color.g, obj.color.b);
+                saveOriginalPos(newDirLight);
+                scene.add(newDirLight);
+                lights.push(newDirLight);
+                
+                const helper = new THREE.DirectionalLightHelper(newDirLight, 5, 0xff0000);
+                helper.visible = false;
+                scene.add(helper);
+                lightHelpers.push(helper);
+            }
         }
     });
 }
@@ -809,7 +896,7 @@ function animate(){
     controls.update();
     
     // handle any poster gifs
-    for(let obj in objects){
+    for(const obj in objects){
         if(obj.includes("poster")){
             handleAnimatedPoster(objects[obj].mesh);
         }
