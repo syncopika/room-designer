@@ -134,36 +134,32 @@ function getModel(modelFilePath, name){
 }
 
 function processMesh(mesh, modelName, parameters){
-    if(!mesh.parent){
-        //const axesHelper = new THREE.AxesHelper(10);
-        //mesh.add(axesHelper);
-        mesh.receiveShadow = true;
-        mesh.castShadow = true;
-        scene.add(mesh);
-        
-        if(parameters){
-            if(parameters.position){
-                mesh.position.copy(parameters.position);
-            }
-            if(parameters.rotation){
-                mesh.rotation.copy(parameters.rotation);
-            }
-            if(parameters.scale){
-                mesh.scale.copy(parameters.scale);
-            }
-            if(parameters.color){
-                mesh.material.color = new THREE.Color(
-                    parameters.color.r,
-                    parameters.color.g,
-                    parameters.color.b
-                )
-            }
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    scene.add(mesh);
+    
+    if(parameters){
+        if(parameters.position){
+            mesh.position.copy(parameters.position);
         }
-        
-        addNewObject(mesh, modelName, objects);
-        populateCurrSelectedMeshControls(mesh);
-        selectedObject = mesh;
+        if(parameters.rotation){
+            mesh.rotation.copy(parameters.rotation);
+        }
+        if(parameters.scale){
+            mesh.scale.copy(parameters.scale);
+        }
+        if(parameters.color){
+            mesh.material.color = new THREE.Color(
+                parameters.color.r,
+                parameters.color.g,
+                parameters.color.b
+            )
+        }
     }
+    
+    addNewObject(mesh, modelName, objects);
+    populateCurrSelectedMeshControls(mesh);
+    selectedObject = mesh;
     
     animate();
 }
@@ -174,8 +170,6 @@ function processGltf(name, parameters){
 
         gltf.scene.traverse((child) => {
             if(child.type === "Mesh" || child.type === "SkinnedMesh"){
-                currMeshes[child.name] = {mesh: null, texture: null};
-                
                 /* for MeshToonMaterial
                 const fiveTone = new THREE.DataTexture(
                   Uint8Array.from([0, 0, 0, 64, 64, 64, 128, 128, 128, 192, 192, 192, 255, 255, 255]),
@@ -190,26 +184,21 @@ function processGltf(name, parameters){
                 const material = child.material.clone();
                 const geometry = child.geometry.clone();
                 const obj = new THREE.Mesh(geometry, material);
-                
                 obj.name = child.name;
-                
-                currMeshes[child.name].mesh = obj;
-                
-                currModel = obj;
-                currModelTextureMesh = obj;
-                
-                //if(child.parent) console.log(child.parent);
-                if(child.parent && currMeshes[child.parent.name]){
-                    currMeshes[child.parent.name].mesh.add(obj);
-                }
                 
                 // reminder that rotation/position/scale fields are immutable: https://github.com/mrdoob/three.js/issues/8940
                 obj.rotation.copy(child.rotation);
                 obj.position.copy(child.position);
                 obj.scale.copy(child.scale);
                 
-                processMesh(obj, name, parameters);
-                
+                if(child.parent && currMeshes[child.parent.name]){
+                    currMeshes[child.parent.name].add(obj);
+                }else{
+                    currMeshes[child.name] = obj;
+                }
+
+                //processMesh(obj, name, parameters);
+
             }else if(child.type === "Object3D" && (child.name.includes("Armature") || child.name.includes("Bone"))){
                 const obj3d = new THREE.Object3D();
                 obj3d.position.copy(child.position);
@@ -217,15 +206,29 @@ function processGltf(name, parameters){
                 obj3d.scale.copy(child.scale);
                 obj3d.name = child.name;
                 
-                currMeshes[child.name] = {mesh: obj3d, texture: null};
-                
                 if(child.parent && currMeshes[child.parent.name]){
-                    currMeshes[child.parent.name].mesh.add(obj3d);
+                    currMeshes[child.parent.name].add(obj3d);
+                }else{
+                    currMeshes[child.name] = obj3d;
                 }
                 
-                processMesh(obj3d, name, parameters);
+                //processMesh(obj3d, name, parameters);
             }
         });
+
+        const meshes = Object.keys(currMeshes);
+        if(meshes.length > 1){
+            // group multiple (non-nested) meshes together
+            const group = new THREE.Group();
+            group.name = name;
+            meshes.forEach(meshName => {
+                group.add(currMeshes[meshName]);
+            });
+            processMesh(group, name, parameters);
+        }else{
+            processMesh(currMeshes[meshes[0]], name, parameters);
+        }
+
     }
 }
 
@@ -259,18 +262,25 @@ function selectMesh(ptrEvt){
     const mouseCoords = getCoordsOnMouseClick(ptrEvt);
     raycaster.setFromCamera(mouseCoords, camera);
     
-    const intersects = raycaster.intersectObjects(scene.children);
+    const intersects = raycaster.intersectObjects(scene.children, true);
     if(intersects.length > 0){
         for(const intersected of intersects){
             if(intersected.object.name && !intersected.object.name.includes("grid")){
-                populateCurrSelectedMeshControls(intersected.object);
-                selectedObject = intersected.object;
+                if(intersected.object.parent.type === "Group"){
+                    selectedObject = intersected.object.parent;
+                }else{
+                    selectedObject = intersected.object;
+                }
+                
+                populateCurrSelectedMeshControls(selectedObject);
                 
                 // indicate which mesh got selected by flashing wireframe
-                selectedObject.material.wireframe = true;
-                setTimeout(() => {
-                    selectedObject.material.wireframe = false;
-                }, 300);
+                if(intersected.object.parent.type !== "Group"){
+                    selectedObject.material.wireframe = true;
+                    setTimeout(() => {
+                        selectedObject.material.wireframe = false;
+                    }, 300);
+                }
                 
                 break;
             }
@@ -341,6 +351,7 @@ function updatePosterImage(mesh, imageUrl){
         loadGifMsg.textContent = "loading gif, this might take a bit...";
         
         mesh.isGif = true;
+        mesh.gifLoaded = false;
         mesh.gifImageData = imageUrl;
         
         // using libgif.js
@@ -355,6 +366,7 @@ function updatePosterImage(mesh, imageUrl){
             const superGif = new SuperGif({gif: img});
             
             superGif.load(() => {
+                mesh.gifLoaded = true;
                 mesh.material.map = new THREE.CanvasTexture(superGif.get_canvas());
                 loadGifMsg.textContent = "";
                 //superGif.play();
@@ -365,7 +377,6 @@ function updatePosterImage(mesh, imageUrl){
         mesh.material.map = newTexture;
         mesh.isGif = false;
     }
-    mesh.material.needsUpdate = true;
 }
 
 function toggleObjMoveAndRotate(evt){
@@ -655,28 +666,30 @@ function populateCurrSelectedMeshControls(mesh){
     }
     
     // add color change option
-    const colorChangeArea = document.getElementById("colorChangeArea");
-    
-    const changeColorBtn = document.createElement('button');
-    changeColorBtn.textContent = "change color";
-    
-    const color = mesh.material.color;
-    const currColor = createColorInputBox(color);
-    
-    changeColorBtn.addEventListener('click', () => {
-        const selectedColor = currColor.value.match(/([0-9]+)/g);
-        mesh.material.color.r = selectedColor[0] / 255;
-        mesh.material.color.g = selectedColor[1] / 255;
-        mesh.material.color.b = selectedColor[2] / 255;
-    });
-    
-    // add color picker
-    const colorWheel = createColorPicker(currColor);
-    
-    colorChangeArea.appendChild(colorWheel);
-    colorChangeArea.appendChild(document.createElement('br'));
-    colorChangeArea.appendChild(currColor);
-    colorChangeArea.appendChild(changeColorBtn);
+    if(mesh.material && mesh.material.color){
+        const colorChangeArea = document.getElementById("colorChangeArea");
+        
+        const changeColorBtn = document.createElement('button');
+        changeColorBtn.textContent = "change color";
+        
+        const color = mesh.material.color;
+        const currColor = createColorInputBox(color);
+        
+        changeColorBtn.addEventListener('click', () => {
+            const selectedColor = currColor.value.match(/([0-9]+)/g);
+            mesh.material.color.r = selectedColor[0] / 255;
+            mesh.material.color.g = selectedColor[1] / 255;
+            mesh.material.color.b = selectedColor[2] / 255;
+        });
+        
+        // add color picker
+        const colorWheel = createColorPicker(currColor);
+        
+        colorChangeArea.appendChild(colorWheel);
+        colorChangeArea.appendChild(document.createElement('br'));
+        colorChangeArea.appendChild(currColor);
+        colorChangeArea.appendChild(changeColorBtn);
+    }
 
     container.appendChild(document.createElement('br'));
     container.appendChild(document.createElement('br'));

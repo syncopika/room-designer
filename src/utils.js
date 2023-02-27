@@ -82,13 +82,19 @@ function addClickModelStart(ptrEvt){
     const mouseCoords = getCoordsOnMouseClick(ptrEvt);
     raycaster.setFromCamera(mouseCoords, camera);
     
-    const intersects = raycaster.intersectObjects(scene.children);
+    const intersects = raycaster.intersectObjects(scene.children, true);
     if(intersects.length > 0){
         for(let intersected of intersects){
             if(intersected.object.name && !intersected.object.name.includes("grid")){
                 startX = mouseCoords.x;
                 startY = mouseCoords.y;
-                objAcquired = intersected.object;
+                
+                if(intersected.object.parent.type === "Group"){
+                    objAcquired = intersected.object.parent;
+                }else{
+                    objAcquired = intersected.object;
+                }
+                
                 break;
             }
         }
@@ -305,7 +311,7 @@ function addNewObject(mesh, modelName, objects){
 
 /****
 
-    color pciker
+    color picker
 
 ****/
 function createColorPicker(colorInput){
@@ -491,7 +497,7 @@ function createLightsControls(lightsArray, container, turnOn){
 // handle any animated gifs used as images for posters
 // https://discourse.threejs.org/t/using-an-animated-gif-as-a-displacement-map-shaders/907/8
 function handleAnimatedPoster(poster){
-    if(poster.isGif){
+    if(poster.isGif && poster.gifLoaded){
         poster.material.needsUpdate = true;
         poster.material.map.needsUpdate = true;
     }
