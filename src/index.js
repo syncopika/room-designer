@@ -179,7 +179,9 @@ function processGltf(name, parameters){
                 );
                 fiveTone.needsUpdate = true;
                 const material = new THREE.MeshToonMaterial({color: 0x049ef4, gradientMap: fiveTone}); //child.material.clone();
+                material.side = THREE.DoubleSide;
                 */
+                
                 
                 const material = child.material.clone();
                 const geometry = child.geometry.clone();
