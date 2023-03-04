@@ -254,35 +254,38 @@ function setupFloorPlan2(grids){
 
 ****/
 function addWall(scene, grids){
-    const wallGeometry = new THREE.PlaneGeometry(20, 20);
-    const wallMaterial = new THREE.MeshBasicMaterial({color: 0xf6b092, side: THREE.DoubleSide}); // peach color
+    function createWall(){
+        const wallGeometry = new THREE.PlaneGeometry(20, 20);
+        const wallMaterial = new THREE.MeshBasicMaterial({color: 0xf6b092, side: THREE.DoubleSide}); // peach color
+        return new THREE.Mesh(wallGeometry, wallMaterial);
+    }
     
-    grids.forEach((grid) => {
+    grids.forEach((grid, index) => {
         if(grid.name.includes("wall")){
-            const newWall = new THREE.Mesh(wallGeometry, wallMaterial);
+            const newWall = createWall();
             newWall.position.copy(grid.position);
             newWall.rotation.copy(grid.rotation);
             newWall.rotateX(90 * Math.PI / 180);
-            newWall.name = "wall";
+            newWall.name = `wall${index}`;
             scene.add(newWall);
-            //const axesHelper = new THREE.AxesHelper(5);
-            //newWall.add(axesHelper);
         }
     });
 }
 
 function addFloor(scene, grids){
-    const floorGeometry = new THREE.PlaneGeometry(20, 20);
-    const floorMaterial = new THREE.MeshBasicMaterial({color: 0xeaddca, side: THREE.DoubleSide}); // almond color
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    function createFloor(){
+        const floorGeometry = new THREE.PlaneGeometry(20, 20);
+        const floorMaterial = new THREE.MeshBasicMaterial({color: 0xeaddca, side: THREE.DoubleSide}); // almond color
+        return new THREE.Mesh(floorGeometry, floorMaterial);
+    }
     
-    grids.forEach((grid) => {
+    grids.forEach((grid, index) => {
         if(grid.name.includes("floor")){
-            const newFloor = floor.clone();
+            const newFloor = createFloor();
             newFloor.position.copy(grid.position);
             newFloor.rotation.copy(grid.rotation);
             newFloor.rotateX(90 * Math.PI / 180);
-            newFloor.name = "floor";
+            newFloor.name = `floor${index}`;
             scene.add(newFloor);
         }
     });
@@ -297,7 +300,7 @@ function addNewObject(mesh, modelName, objects){
             'modelName': modelName, 
             scale: {x: mesh.scale.x, y: mesh.scale.y, z: mesh.scale.z}, // note the original scale 
             'mesh': mesh,
-            'counter': counter+1,           
+            'counter': counter+1,
         };
     }else{
         objects[mesh.name] = {
