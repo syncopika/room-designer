@@ -29,12 +29,11 @@ controls.panSpeed = 0.8;
 const objects = {};
 let grids = [];
 let lights = [];
-let lightHelpers = [];
 let lightControl = false;
 let wallExists = false;
 let floorExists = false;
 
-setupLights(scene, lights, lightHelpers);
+setupLights(scene, lights);
 
 // set up grid
 // https://stackoverflow.com/questions/56029083/change-width-and-height-of-a-gridhelper-in-three-js
@@ -170,19 +169,6 @@ function processGltf(name, parameters){
 
         gltf.scene.traverse((child) => {
             if(child.type === "Mesh" || child.type === "SkinnedMesh"){
-                /* for MeshToonMaterial
-                const fiveTone = new THREE.DataTexture(
-                  Uint8Array.from([0, 0, 0, 64, 64, 64, 128, 128, 128, 192, 192, 192, 255, 255, 255]),
-                  5,
-                  1,
-                  THREE.RGBFormat
-                );
-                fiveTone.needsUpdate = true;
-                const material = new THREE.MeshToonMaterial({color: 0x049ef4, gradientMap: fiveTone}); //child.material.clone();
-                material.side = THREE.DoubleSide;
-                */
-                
-                
                 const material = child.material.clone();
                 const geometry = child.geometry.clone();
                 const obj = new THREE.Mesh(geometry, material);
@@ -198,6 +184,11 @@ function processGltf(name, parameters){
                 }else{
                     currMeshes[child.name] = obj;
                 }
+                
+                obj.materialOptions = {
+                    'default': material,
+                    'toon': createMeshToonMaterial(),
+                };
 
                 //processMesh(obj, name, parameters);
 
@@ -695,6 +686,31 @@ function populateCurrSelectedMeshControls(mesh){
 
     container.appendChild(document.createElement('br'));
     container.appendChild(document.createElement('br'));
+
+    // add material change options
+    const changeMaterialSelect = document.createElement('select');
+    changeMaterialSelect.id = 'changeMaterialSelect';
+    
+    for(const material in mesh.materialOptions){
+        const newOption = document.createElement('option');
+        newOption.textContent = material;
+        newOption.value = material;
+        changeMaterialSelect.appendChild(newOption);
+    }
+    container.appendChild(changeMaterialSelect);
+    
+    const changeMaterialBtn = document.createElement('button');
+    changeMaterialBtn.textContent = 'change material';
+    changeMaterialBtn.style.marginLeft = "3px";
+    changeMaterialBtn.addEventListener('click', () => {
+        const selected = document.getElementById('changeMaterialSelect').value;
+        mesh.material = mesh.materialOptions[selected];
+    });
+    
+    container.appendChild(changeMaterialBtn);
+
+    container.appendChild(document.createElement('br'));
+    container.appendChild(document.createElement('br'));
     container.appendChild(deleteBtn);
 }
 
@@ -743,6 +759,7 @@ function save(){
             position: light.position,
             rotation: light.rotation,
             intensity: light.intensity,
+            enabled: light.visible,
         });
     }
     
@@ -794,20 +811,17 @@ function loadObjectsFromData(data){
     // clear all current lights
     if(lightControl) document.getElementById('lightControlBtn').click();
     lights.forEach(light => {
+        light.remove(light.lightHelper);
+        light.lightHelper.dispose();
         light.parent.remove(light);
-    });
-    lightHelpers.forEach(lh => {
-        lh.parent.remove(lh);
-        lh.dispose();
     });
     
     lights = [];
-    lightHelpers = [];
     
     // no lights included in import so use default light setup
     // TODO; don't assume that the only objects with type are lights?
     if(!data[0].type){
-        setupLights(scene, lights, lightHelpers);
+        setupLights(scene, lights);
     }
     
     const objsAvailForImport = Array.from(document.querySelectorAll('.modelOptions')).map(x => x.value);
@@ -834,14 +848,11 @@ function loadObjectsFromData(data){
                 newDirLight.position.copy(obj.position);
                 newDirLight.rotation.copy(obj.rotation);
                 newDirLight.color = new THREE.Color(obj.color.r, obj.color.g, obj.color.b);
+                if(obj.enabled === false) newDirLight.visible = false;
                 saveOriginalPos(newDirLight);
                 scene.add(newDirLight);
                 lights.push(newDirLight);
-                
-                const helper = new THREE.DirectionalLightHelper(newDirLight, 5, 0xff0000);
-                helper.visible = false;
-                scene.add(helper);
-                lightHelpers.push(helper);
+                addLightHelper(newDirLight, scene);
             }
         }
     });
@@ -887,8 +898,10 @@ function setupLightsController(evt){
     lightControl = !lightControl;
     createLightsControls(lights, document.getElementById('lightControls'), lightControl);
     
-    lightHelpers.forEach(lightHelper => {
-        lightHelper.visible = !lightHelper.visible;
+    lights.forEach(light => {
+        if(light.visible){
+            light.lightHelper.visible = lightControl;
+        }
     });
 }
 document.getElementById('lightControlBtn').addEventListener('click', setupLightsController);

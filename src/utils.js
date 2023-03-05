@@ -12,50 +12,46 @@ function saveOriginalPos(light){
     }
 }
 
+function addLightHelper(light, scene){
+    const helper = new THREE.DirectionalLightHelper(light, 5, 0xff0000);
+    light.lightHelper = helper;
+    helper.visible = false;
+    scene.add(helper);
+}
+
 // https://discourse.threejs.org/t/solved-glb-model-is-very-dark/6258
-function setupLights(scene, lights, lightHelpers){
+function setupLights(scene, lights){
     const dirLight = new THREE.DirectionalLight(0xffffff);
     dirLight.position.set(0, 80, 0);
-    const helper1 = new THREE.DirectionalLightHelper(dirLight, 5, 0xff0000);
     saveOriginalPos(dirLight);
     scene.add(dirLight);
-    scene.add(helper1);
+    addLightHelper(dirLight, scene);
 
     const dirLight2 = new THREE.DirectionalLight(0xffffff);
     dirLight2.position.set(0, 50, 20);
-    const helper2 = new THREE.DirectionalLightHelper(dirLight2, 5, 0xff0000);
     saveOriginalPos(dirLight2);
     scene.add(dirLight2);
-    scene.add(helper2);
+    addLightHelper(dirLight2, scene);
 
     const dirLight3 = new THREE.DirectionalLight(0xffffff);
     dirLight3.position.set(0, 50, -20);
     saveOriginalPos(dirLight3);
-    const helper3 = new THREE.DirectionalLightHelper(dirLight3, 5, 0xff0000);
     scene.add(dirLight3);
-    scene.add(helper3);
+    addLightHelper(dirLight3, scene);
 
     const dirLight4 = new THREE.DirectionalLight(0xffffff);
     dirLight4.position.set(20, 50, 0);
     saveOriginalPos(dirLight4);
-    const helper4 = new THREE.DirectionalLightHelper(dirLight4, 5, 0xff0000);
     scene.add(dirLight4);
-    scene.add(helper4);
+    addLightHelper(dirLight4, scene);
 
     const dirLight5 = new THREE.DirectionalLight(0xffffff);
     dirLight5.position.set(-20, 50, 0);
     saveOriginalPos(dirLight5);
-    const helper5 = new THREE.DirectionalLightHelper(dirLight5, 5, 0xff0000);
     scene.add(dirLight5);
-    scene.add(helper5);
+    addLightHelper(dirLight5, scene);
 
     [dirLight, dirLight2, dirLight3, dirLight4, dirLight5].forEach(x => lights.push(x));
-    [helper1, helper2, helper3, helper4, helper5].forEach(x => lightHelpers.push(x));
-    
-    // turn light helpers off initially
-    lightHelpers.forEach(lh => {
-        lh.visible = false;
-    });
 }
 
 /*****
@@ -441,8 +437,7 @@ function createLightsControls(lightsArray, container, turnOn){
                         light.position.set(light.position.x, light.position.y, light.originalPos.z + amountToMove);
                         break;
                 }
-                // TODO: just update the corresponding lightHelper for this light
-                lightHelpers.forEach(x => x.update());
+                light.lightHelper.update();
             }
         }
         
@@ -465,6 +460,7 @@ function createLightsControls(lightsArray, container, turnOn){
         enableCheckbox.checked = light.visible;
         enableCheckbox.addEventListener('input', () => {
             light.visible = !light.visible;
+            light.lightHelper.visible = light.visible;
         });
         
         const enableCheckboxLabel = document.createElement('label');
@@ -514,6 +510,20 @@ function createLightsControls(lightsArray, container, turnOn){
     });
 }
 
+function createMeshToonMaterial(){
+    const fiveTone = new THREE.DataTexture(
+      Uint8Array.from([0, 0, 0, 64, 64, 64, 128, 128, 128, 192, 192, 192, 255, 255, 255]),
+      5,
+      1,
+      THREE.RGBFormat
+    );
+    fiveTone.needsUpdate = true;
+    const material = new THREE.MeshToonMaterial({color: 0x049ef4, gradientMap: fiveTone}); //child.material.clone();
+    material.side = THREE.DoubleSide;
+    
+    return material;
+}
+
 // handle any animated gifs used as images for posters
 // https://discourse.threejs.org/t/using-an-animated-gif-as-a-displacement-map-shaders/907/8
 function handleAnimatedPoster(poster){
@@ -522,8 +532,3 @@ function handleAnimatedPoster(poster){
         poster.material.map.needsUpdate = true;
     }
 }
-
-
-
-
-
