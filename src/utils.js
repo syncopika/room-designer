@@ -12,50 +12,46 @@ function saveOriginalPos(light){
     }
 }
 
+function addLightHelper(light, scene){
+    const helper = new THREE.DirectionalLightHelper(light, 5, 0xff0000);
+    light.lightHelper = helper;
+    helper.visible = false;
+    scene.add(helper);
+}
+
 // https://discourse.threejs.org/t/solved-glb-model-is-very-dark/6258
-function setupLights(scene, lights, lightHelpers){
+function setupLights(scene, lights){
     const dirLight = new THREE.DirectionalLight(0xffffff);
     dirLight.position.set(0, 80, 0);
-    const helper1 = new THREE.DirectionalLightHelper(dirLight, 5, 0xff0000);
     saveOriginalPos(dirLight);
     scene.add(dirLight);
-    scene.add(helper1);
+    addLightHelper(dirLight, scene);
 
     const dirLight2 = new THREE.DirectionalLight(0xffffff);
     dirLight2.position.set(0, 50, 20);
-    const helper2 = new THREE.DirectionalLightHelper(dirLight2, 5, 0xff0000);
     saveOriginalPos(dirLight2);
     scene.add(dirLight2);
-    scene.add(helper2);
+    addLightHelper(dirLight2, scene);
 
     const dirLight3 = new THREE.DirectionalLight(0xffffff);
     dirLight3.position.set(0, 50, -20);
     saveOriginalPos(dirLight3);
-    const helper3 = new THREE.DirectionalLightHelper(dirLight3, 5, 0xff0000);
     scene.add(dirLight3);
-    scene.add(helper3);
+    addLightHelper(dirLight3, scene);
 
     const dirLight4 = new THREE.DirectionalLight(0xffffff);
     dirLight4.position.set(20, 50, 0);
     saveOriginalPos(dirLight4);
-    const helper4 = new THREE.DirectionalLightHelper(dirLight4, 5, 0xff0000);
     scene.add(dirLight4);
-    scene.add(helper4);
+    addLightHelper(dirLight4, scene);
 
     const dirLight5 = new THREE.DirectionalLight(0xffffff);
     dirLight5.position.set(-20, 50, 0);
     saveOriginalPos(dirLight5);
-    const helper5 = new THREE.DirectionalLightHelper(dirLight5, 5, 0xff0000);
     scene.add(dirLight5);
-    scene.add(helper5);
+    addLightHelper(dirLight5, scene);
 
     [dirLight, dirLight2, dirLight3, dirLight4, dirLight5].forEach(x => lights.push(x));
-    [helper1, helper2, helper3, helper4, helper5].forEach(x => lightHelpers.push(x));
-    
-    // turn light helpers off initially
-    lightHelpers.forEach(lh => {
-        lh.visible = false;
-    });
 }
 
 /*****
@@ -254,35 +250,38 @@ function setupFloorPlan2(grids){
 
 ****/
 function addWall(scene, grids){
-    const wallGeometry = new THREE.PlaneGeometry(20, 20);
-    const wallMaterial = new THREE.MeshBasicMaterial({color: 0xf6b092, side: THREE.DoubleSide}); // peach color
+    function createWall(){
+        const wallGeometry = new THREE.PlaneGeometry(20, 20);
+        const wallMaterial = new THREE.MeshBasicMaterial({color: 0xf6b092, side: THREE.DoubleSide}); // peach color
+        return new THREE.Mesh(wallGeometry, wallMaterial);
+    }
     
-    grids.forEach((grid) => {
+    grids.forEach((grid, index) => {
         if(grid.name.includes("wall")){
-            const newWall = new THREE.Mesh(wallGeometry, wallMaterial);
+            const newWall = createWall();
             newWall.position.copy(grid.position);
             newWall.rotation.copy(grid.rotation);
             newWall.rotateX(90 * Math.PI / 180);
-            newWall.name = "wall";
+            newWall.name = `wall${index}`;
             scene.add(newWall);
-            //const axesHelper = new THREE.AxesHelper(5);
-            //newWall.add(axesHelper);
         }
     });
 }
 
 function addFloor(scene, grids){
-    const floorGeometry = new THREE.PlaneGeometry(20, 20);
-    const floorMaterial = new THREE.MeshBasicMaterial({color: 0xeaddca, side: THREE.DoubleSide}); // almond color
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    function createFloor(){
+        const floorGeometry = new THREE.PlaneGeometry(20, 20);
+        const floorMaterial = new THREE.MeshBasicMaterial({color: 0xeaddca, side: THREE.DoubleSide}); // almond color
+        return new THREE.Mesh(floorGeometry, floorMaterial);
+    }
     
-    grids.forEach((grid) => {
+    grids.forEach((grid, index) => {
         if(grid.name.includes("floor")){
-            const newFloor = floor.clone();
+            const newFloor = createFloor();
             newFloor.position.copy(grid.position);
             newFloor.rotation.copy(grid.rotation);
             newFloor.rotateX(90 * Math.PI / 180);
-            newFloor.name = "floor";
+            newFloor.name = `floor${index}`;
             scene.add(newFloor);
         }
     });
@@ -297,7 +296,7 @@ function addNewObject(mesh, modelName, objects){
             'modelName': modelName, 
             scale: {x: mesh.scale.x, y: mesh.scale.y, z: mesh.scale.z}, // note the original scale 
             'mesh': mesh,
-            'counter': counter+1,           
+            'counter': counter+1,
         };
     }else{
         objects[mesh.name] = {
@@ -382,8 +381,7 @@ function createLightsControls(lightsArray, container, turnOn){
     }
     
     // create some controls for each light in lightsArray
-    let index = 0;
-    lightsArray.forEach(light => {
+    lightsArray.forEach((light, index) => {
         const lightName = document.createElement('p');
         lightName.textContent = `directional light ${index}`;
         container.appendChild(lightName);
@@ -401,10 +399,14 @@ function createLightsControls(lightsArray, container, turnOn){
             
             const moveLightControllerInputLabel = document.createElement('label');
             moveLightControllerInputLabel.for = `moveLightControllerInputRadio${axis}-${index}`;
-            moveLightControllerInputLabel.textContent = ` ${axis} axis`;
+            moveLightControllerInputLabel.textContent = `${axis} axis`;
             
             container.appendChild(moveLightControllerInputLabel);
             container.appendChild(moveLightControllerInput);
+            
+            const spacer = document.createElement('span');
+            spacer.textContent = "|";
+            container.appendChild(spacer);
         });
         
         // slider for movement
@@ -435,8 +437,7 @@ function createLightsControls(lightsArray, container, turnOn){
                         light.position.set(light.position.x, light.position.y, light.originalPos.z + amountToMove);
                         break;
                 }
-                // TODO: just update the corresponding lightHelper for this light
-                lightHelpers.forEach(x => x.update());
+                light.lightHelper.update();
             }
         }
         
@@ -451,6 +452,23 @@ function createLightsControls(lightsArray, container, turnOn){
         container.appendChild(moveLightSliderLabel);
         
         container.appendChild(document.createElement('br'));
+        
+        // enable/disable
+        const enableCheckbox = document.createElement('input');
+        enableCheckbox.type = "checkbox";
+        enableCheckbox.name = `enabled${index}`;
+        enableCheckbox.checked = light.visible;
+        enableCheckbox.addEventListener('input', () => {
+            light.visible = !light.visible;
+            light.lightHelper.visible = light.visible;
+        });
+        
+        const enableCheckboxLabel = document.createElement('label');
+        enableCheckboxLabel.textContent = "enabled: ";
+        enableCheckboxLabel.for = enableCheckbox.name;
+        
+        container.appendChild(enableCheckboxLabel);
+        container.appendChild(enableCheckbox);
         
         /* control rotation
         ['X', 'Y', 'Z'].forEach(axis => {
@@ -489,9 +507,21 @@ function createLightsControls(lightsArray, container, turnOn){
         */
         
         container.appendChild(document.createElement('hr'));
-        
-        index++;
     });
+}
+
+function createMeshToonMaterial(){
+    const fiveTone = new THREE.DataTexture(
+      Uint8Array.from([0, 0, 0, 64, 64, 64, 128, 128, 128, 192, 192, 192, 255, 255, 255]),
+      5,
+      1,
+      THREE.RGBFormat
+    );
+    fiveTone.needsUpdate = true;
+    const material = new THREE.MeshToonMaterial({color: 0x049ef4, gradientMap: fiveTone}); //child.material.clone();
+    material.side = THREE.DoubleSide;
+    
+    return material;
 }
 
 // handle any animated gifs used as images for posters
@@ -502,8 +532,3 @@ function handleAnimatedPoster(poster){
         poster.material.map.needsUpdate = true;
     }
 }
-
-
-
-
-
