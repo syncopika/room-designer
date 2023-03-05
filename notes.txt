@@ -10,7 +10,6 @@ TODO:
 - improve scaling ux (be able to specify a value, not just have a slider)
 - be able to change visibility of objects in scene
 - be able to apply image texture to walls
-- objects that have multiple meshes should be grouped into one object (e.g. vending machine)
 
 todo models:
 - wall shelves
