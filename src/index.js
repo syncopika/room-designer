@@ -684,30 +684,32 @@ function populateCurrSelectedMeshControls(mesh){
         colorChangeArea.appendChild(changeColorBtn);
     }
 
-    container.appendChild(document.createElement('br'));
-    container.appendChild(document.createElement('br'));
-
     // add material change options
-    const changeMaterialSelect = document.createElement('select');
-    changeMaterialSelect.id = 'changeMaterialSelect';
+    if(mesh.materialOptions){
+        container.appendChild(document.createElement('br'));
+        container.appendChild(document.createElement('br'));
     
-    for(const material in mesh.materialOptions){
-        const newOption = document.createElement('option');
-        newOption.textContent = material;
-        newOption.value = material;
-        changeMaterialSelect.appendChild(newOption);
+        const changeMaterialSelect = document.createElement('select');
+        changeMaterialSelect.id = 'changeMaterialSelect';
+        
+        for(const material in mesh.materialOptions){
+            const newOption = document.createElement('option');
+            newOption.textContent = material;
+            newOption.value = material;
+            changeMaterialSelect.appendChild(newOption);
+        }
+        container.appendChild(changeMaterialSelect);
+        
+        const changeMaterialBtn = document.createElement('button');
+        changeMaterialBtn.textContent = 'change material';
+        changeMaterialBtn.style.marginLeft = "3px";
+        changeMaterialBtn.addEventListener('click', () => {
+            const selected = document.getElementById('changeMaterialSelect').value;
+            mesh.material = mesh.materialOptions[selected];
+        });
+        
+        container.appendChild(changeMaterialBtn);
     }
-    container.appendChild(changeMaterialSelect);
-    
-    const changeMaterialBtn = document.createElement('button');
-    changeMaterialBtn.textContent = 'change material';
-    changeMaterialBtn.style.marginLeft = "3px";
-    changeMaterialBtn.addEventListener('click', () => {
-        const selected = document.getElementById('changeMaterialSelect').value;
-        mesh.material = mesh.materialOptions[selected];
-    });
-    
-    container.appendChild(changeMaterialBtn);
 
     container.appendChild(document.createElement('br'));
     container.appendChild(document.createElement('br'));

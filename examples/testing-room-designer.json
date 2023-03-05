@@ -127,7 +127,7 @@
       "g": 1,
       "b": 1
     },
-    "image": "http://localhost:8080/examples/cat2.png"
+    "image": "examples/cat2.png"
   },
   {
     "name": "computer-monitor",
