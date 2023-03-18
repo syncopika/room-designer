@@ -4,6 +4,7 @@ const renderer = new THREE.WebGLRenderer({antialias: true, canvas: container});
 const fov = 60;
 const camera = new THREE.PerspectiveCamera(fov, container.clientWidth / container.clientHeight, 0.01, 1000);
 const scene = new THREE.Scene();
+const clock = new THREE.Clock();
 scene.background = new THREE.Color(0xffffff);
 
 renderer.setSize(container.clientWidth, container.clientHeight);
@@ -27,6 +28,7 @@ controls.panSpeed = 0.8;
 
 // global vars
 const objects = {};
+const animationRegistry = {};
 let grids = [];
 let lights = [];
 let lightControl = false;
@@ -67,22 +69,6 @@ document.getElementById("addFloor").addEventListener('click', () => {
         floorExists = true;
     }
 });
-
-/* add object
-function addSphere(){
-    const radius = 3;
-    const geometry = new THREE.SphereGeometry(radius, 16, 16);
-    const material = new THREE.MeshBasicMaterial({color: 0xffaa00});
-    const sphere = new THREE.Mesh(geometry, material);
-    sphere.name = "sphere";
-    sphere.material.wireframe = true;
-    sphere.translateY(radius);
-    scene.add(sphere);
-    populateCurrSelectedMeshControls(sphere);
-    selectedObject = sphere;
-}
-document.getElementById("addSphere").addEventListener('click', addSphere);
-*/
 
 // add image plane
 function addImagePlane(parameters=null){
@@ -166,6 +152,19 @@ function processMesh(mesh, modelName, parameters){
 function processGltf(name, parameters){
     return function(gltf){
         currMeshes = {};
+        animations = {};
+
+        if(gltf.animations){
+            // keep track of which meshes have animations.
+            gltf.animations.forEach(anim => {
+                const meshName = anim.tracks[0].name.split('.')[0]; // e.g. 'Cube010.position' might be the name of a track. I am assuming all track names will contain the same mesh name here. 
+                if(!animations[meshName]){
+                    animations[meshName] = [anim];
+                }else{
+                    animations[meshName].push(anim);
+                }
+            });
+        }
 
         gltf.scene.traverse((child) => {
             if(child.type === "Mesh" || child.type === "SkinnedMesh"){
@@ -178,6 +177,8 @@ function processGltf(name, parameters){
                 obj.rotation.copy(child.rotation);
                 obj.position.copy(child.position);
                 obj.scale.copy(child.scale);
+                
+                // TODO: support animations for single meshes
                 
                 if(child.parent && currMeshes[child.parent.name]){
                     currMeshes[child.parent.name].add(obj);
@@ -214,7 +215,38 @@ function processGltf(name, parameters){
             // group multiple (non-nested) meshes together
             const group = new THREE.Group();
             group.name = name;
+            
+            // add all constituent mesh animations to an object and add to group object
+            // for easy accessibility later
+            const meshAnimations = {};
+            
+            // TODO: break this out into a helper function
             meshes.forEach(meshName => {
+                // set up animations if any
+                if(animations[meshName]){
+                    const currMesh = currMeshes[meshName];
+                    currMesh.animationClips = animations[meshName];
+                    currMesh.animationMixer = new THREE.AnimationMixer(currMesh);
+                    
+                    animations[meshName].forEach(action => {
+                        const newAction = currMesh.animationMixer.clipAction(action);
+                        newAction.setLoop(THREE.LoopRepeat);
+                        
+                        if(!meshAnimations[meshName]){
+                            meshAnimations[meshName] = [{
+                                action: newAction,
+                                mixer: currMesh.animationMixer,
+                            }];
+                        }else{
+                            meshAnimations[meshName].push({
+                                action: newAction,
+                                mixer: currMesh.animationMixer,
+                            });
+                        }
+                    });
+                }
+                group.meshAnimations = meshAnimations;
+                group.hasAnimations = true;
                 group.add(currMeshes[meshName]);
             });
             processMesh(group, name, parameters);
@@ -531,10 +563,20 @@ function populateCurrSelectedMeshControls(mesh){
         
         // to prevent having the user need to adjust the vertical position of the object (assuming it should be at least floor-level)
         // when scaling, do the adjusting here
-        // TODO: note that this can be problematic though if an object has been placed on another object - we don't necessarily want the height
-        // to change in that case so translateY should maybe be dependent on the height difference of whatever gets hit first when doing a downward raycast
+        //
+        // note that this can be problematic though if an object has been placed on another object - we don't necessarily want the height
+        // to change in that case so translateY should be dependent on if something gets hit with a downward raycast
+        
+        // TODO: this still needs to be looked at again. after scaling, the height of the mesh may change and 
+        // so it's possible for a mesh to suddenly be underneath it, which then changes the scaling behavior to maybe something undesirable
         const bbox = new THREE.Box3().setFromObject(mesh);
-        mesh.translateY(-bbox.min.y);
+        const bboxCenter = new THREE.Vector3();
+        bbox.getCenter(bboxCenter);
+        const raycast = raycaster.set(bboxCenter, new THREE.Vector3(0, -1, 0));
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        if(!(intersects.length > 0)){
+            mesh.translateY(-bbox.min.y);
+        }
     });
     
     const scaleControllerInputLabel = document.createElement('label');
@@ -585,6 +627,39 @@ function populateCurrSelectedMeshControls(mesh){
     container.appendChild(toggleHelperAxesLabel);
     container.appendChild(toggleHelperAxes);
     
+    // animation control
+    if(mesh.hasAnimations){
+        container.appendChild(document.createElement('br'));
+        container.appendChild(document.createElement('br'));
+        const animations = mesh.meshAnimations;
+        for(const meshName in animations){
+            const meshNameElement = document.createElement('p');
+            meshNameElement.textContent = meshName + ":";
+            container.appendChild(meshNameElement);
+            
+            // be able to toggle animations
+            const animClips = animations[meshName];
+            animClips.forEach(clip => {
+                const clipName = clip.action._clip.name;
+                const isPaused = clip.action.paused;
+                const clipLabel = document.createElement('label');
+                clipLabel.textContent = clipName + ":";
+                
+                const clipCheckbox = document.createElement('input');
+                clipCheckbox.type = "checkbox";
+                clipCheckbox.checked = !isPaused;
+                clipCheckbox.addEventListener('change', (evt) => {
+                    clip.action.paused = !evt.target.checked;
+                });
+                
+                container.appendChild(clipLabel);
+                container.appendChild(clipCheckbox);
+                container.appendChild(document.createElement('br'));
+                container.appendChild(document.createElement('br'));
+            });
+        }
+    }
+    
     // delete option
     const deleteBtn = document.createElement('button');
     deleteBtn.id = "delete";
@@ -621,7 +696,7 @@ function populateCurrSelectedMeshControls(mesh){
     });
     
     // if it's a poster, allow the user to change image
-    // TODO: if it's a poster, allow the user to add a frame for it?
+    // TODO: if it's a poster, allow the user to add a frame for it? (need a mesh for that)
     if(mesh.name.includes("poster")){
         container.appendChild(document.createElement('br'));
         container.appendChild(document.createElement('br'));
@@ -739,7 +814,6 @@ document.getElementById('addModel').addEventListener('click', () => {
 });
 
 function save(){
-    // TODO: capture any lighting, wall/floor properties as well
     let name = prompt("name of file: ");
     if(name === ""){
         const date = new Date(); 
@@ -772,11 +846,11 @@ function save(){
         "position": theMesh.mesh.position,
         "rotation": theMesh.mesh.rotation,
         "scale": theMesh.mesh.scale,
-        "color": {
+        "color": (theMesh.mesh.material ? {
             r: theMesh.mesh.material.color.r,
             g: theMesh.mesh.material.color.g,
             b: theMesh.mesh.material.color.b,
-        }
+        } : null),
       };
       
       if(theMesh.modelName === "poster"){
@@ -912,12 +986,28 @@ function animate(){
     requestAnimationFrame(animate);
     controls.update();
     
-    // handle any poster gifs
+    // handle any animations + poster gifs
     for(const obj in objects){
         if(obj.includes("poster")){
             handleAnimatedPoster(objects[obj].mesh);
         }
-    }
+        if(objects[obj].mesh.hasAnimations){
+            for(const mesh in objects[obj].mesh.meshAnimations){
+                const animationsList = objects[obj].mesh.meshAnimations[mesh];
+                
+                // TODO: need to verify this with an object that has multiple animations
+                // doesn't seem to be working how I'd expect with the vending machine?
+                animationsList.forEach(animation => {
+                    const animClip = animation.action;
+                    const animMixer = animation.mixer;
+                    if(!animClip.paused){
+                        animClip.play();
+                    }
+                    animMixer.update(clock.getDelta());
+                });
+            }
+        }
+    }    
     
     renderer.render(scene, camera);
 }
