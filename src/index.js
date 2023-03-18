@@ -28,7 +28,6 @@ controls.panSpeed = 0.8;
 
 // global vars
 const objects = {};
-const animationRegistry = {};
 let grids = [];
 let lights = [];
 let lightControl = false;
@@ -134,11 +133,21 @@ function processMesh(mesh, modelName, parameters){
             mesh.scale.copy(parameters.scale);
         }
         if(parameters.color){
-            mesh.material.color = new THREE.Color(
-                parameters.color.r,
-                parameters.color.g,
-                parameters.color.b
-            )
+            if(mesh.type === 'Group'){
+                mesh.children.forEach(child => {
+                    child.material.color = new THREE.Color(
+                        parameters.color.r,
+                        parameters.color.g,
+                        parameters.color.b
+                    );
+                });
+            }else{
+                mesh.material.color = new THREE.Color(
+                    parameters.color.r,
+                    parameters.color.g,
+                    parameters.color.b
+                );
+            }
         }
     }
     
@@ -734,20 +743,30 @@ function populateCurrSelectedMeshControls(mesh){
     }
     
     // add color change option
-    if(mesh.material && mesh.material.color){
+    if((mesh.material && mesh.material.color) || mesh.type === 'Group'){
         const colorChangeArea = document.getElementById("colorChangeArea");
         
         const changeColorBtn = document.createElement('button');
         changeColorBtn.textContent = "change color";
         
-        const color = mesh.material.color;
+        const color = mesh.type !== 'Group' ? mesh.material.color : mesh.children[0].material.color;
         const currColor = createColorInputBox(color);
         
         changeColorBtn.addEventListener('click', () => {
+            
             const selectedColor = currColor.value.match(/([0-9]+)/g);
-            mesh.material.color.r = selectedColor[0] / 255;
-            mesh.material.color.g = selectedColor[1] / 255;
-            mesh.material.color.b = selectedColor[2] / 255;
+            
+            if(mesh.type === 'Group'){
+                mesh.children.forEach(child => {
+                    child.material.color.r = selectedColor[0] / 255;
+                    child.material.color.g = selectedColor[1] / 255;
+                    child.material.color.b = selectedColor[2] / 255;
+                });
+            }else{
+                mesh.material.color.r = selectedColor[0] / 255;
+                mesh.material.color.g = selectedColor[1] / 255;
+                mesh.material.color.b = selectedColor[2] / 255;
+            }
         });
         
         // add color picker
@@ -841,16 +860,29 @@ function save(){
     
     for(const obj in objects){
       const theMesh = objects[obj];
+      
+      let color = null;
+      if(theMesh.mesh.type === 'Group' && theMesh.mesh.children[0].material){
+        // assuming all children share the same color
+        color = {
+            r: theMesh.mesh.children[0].material.color.r,
+            g: theMesh.mesh.children[0].material.color.g,
+            b: theMesh.mesh.children[0].material.color.b,
+        };
+      }else if(theMesh.mesh.material){
+        color = {
+            r: theMesh.mesh.material.color.r,
+            g: theMesh.mesh.material.color.g,
+            b: theMesh.mesh.material.color.b,
+        };
+      }
+      
       const objData = {
         "name": theMesh.modelName,
         "position": theMesh.mesh.position,
         "rotation": theMesh.mesh.rotation,
         "scale": theMesh.mesh.scale,
-        "color": (theMesh.mesh.material ? {
-            r: theMesh.mesh.material.color.r,
-            g: theMesh.mesh.material.color.g,
-            b: theMesh.mesh.material.color.b,
-        } : null),
+        "color": color,
       };
       
       if(theMesh.modelName === "poster"){
