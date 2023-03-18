@@ -10,6 +10,7 @@ TODO:
 - improve scaling ux (be able to specify a value, not just have a slider)
 - be able to change visibility of objects in scene
 - be able to apply image texture to walls
+- be able to have the camera focus on a specific object (and maybe be able to cycle through all objects in scene)
 
 todo models:
 - wall shelves
@@ -19,6 +20,7 @@ todo models:
 - ceiling fan
 - more chair options
 - rug
+- more plushies
 
 // threejs notes
 
