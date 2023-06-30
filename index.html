@@ -26,20 +26,29 @@
             position: relative;
             display: block;
             margin: 0 auto;
-            height: 80vh;
+            height: 60vh;
             width: 50vw;
         }
         
+        /* TODO: make flexbox */
         #modelOptionsDisplay {
-            height: 80px;
+            height: 90px;
             border: 1px solid #000;
             padding: 5px;
-            overflow: scroll;
+            overflow: auto;
         }
         
         #container {
             display: flex;
             gap: 3%;
+        }
+        
+        #display {
+            margin: 0 auto;
+        }
+        
+        #controls {
+            margin-left: 10px;
         }
         
         #selectExample {
@@ -48,6 +57,7 @@
         
         .modelImg {
             border: 1px solid #ddd;
+            display: inline-block;
         }
         
         .modelImg:hover {
@@ -59,44 +69,58 @@
     <body>
         <h1> room designer </h1>
         <p>instructions: add objects to the scene and place them however you like! adding an object or clicking the 'select model' button and then clicking on an object sets the currently selected object. to move the currently selected object, click the 'toggle object move/rotate' button and then click and drag the object (you can use your mouse wheel to also rotate the object). do note that whenever adding a new object, you will most likely have to scale it.</p>
+        
+        <div id='buttons'>
+            <button id='addFloor'> add floor </button>
+            <button id='addWall'> add wall </button>
+            <button id='addPoster'> add poster </button>
+            
+            <label for='selectModelToAdd'>category: </label>
+            <select id='selectModelToAdd'>
+                <option class='modelOptions' value='furniture'>furniture</option>
+                <option class='modelOptions' value='electronics'>electronics</option>
+                <option class='modelOptions' value='lighting'>lighting</option>
+                <option class='modelOptions' value='accessories'>accessories</option>
+                <option class='modelOptions' value='misc'>misc</option>
+            </select>
+            
+            <span> - </span>
+
+            <button id='toggleGrids'> toggle grids </button>
+            <!--<button id='toggleLightHelpers'> toggle light helpers </button>-->
+            <button id='lightControlBtn'> light controls </button>
+            <button id='importModel'> import object </button>
+            <button id='selectModel'> select object </button>
+            
+            <span> - </span>
+
+            <button id='save'> save project </button>
+            <button id='import'> import project </button>
+            
+            <span> - </span>
+            
+            <label for='selectExample'>select example: </label>
+            <select id='selectExample'>
+                <option class='exampleOptions' value='test-room-designer'>example1</option>
+                <option class='exampleOptions' value='testing-room-designer'>example2</option>
+                <option class='exampleOptions' value='test-gif-room-designer'>gif poster test</option>
+            </select>
+            
+            <button id='selectExampleBtn'>load</button>
+            
+            <br />
+            <br />
+            
+            <div id='modelOptionsDisplay'>
+            </div>
+            
+            <br />
+        </div>
+        
+        <br />
+                
         <div id='container'>
             <div id='controls'>
-                <div id='buttons'>
-                    <div>
-                        <button id='addFloor'> add floor </button>
-                        <button id='addWall'> add wall </button>
-                        <button id='addPoster'> add poster </button>
-                        <select id='selectModelToAdd'>
-                            <option class='modelOptions' value='furniture'>furniture</option>
-                            <option class='modelOptions' value='electronics'>electronics</option>
-                            <option class='modelOptions' value='lighting'>lighting</option>
-                            <option class='modelOptions' value='accessories'>accessories</option>
-                            <option class='modelOptions' value='misc'>misc</option>
-                        </select>
-                    </div>
-                    <br />
-                        <div id='modelOptionsDisplay'>
-                        </div>
-                    <br />
-                    <div>
-                        <button id='toggleGrids'> toggle grids </button>
-                        <!--<button id='toggleLightHelpers'> toggle light helpers </button>-->
-                        <button id='lightControlBtn'> light controls </button>
-                        <button id='importModel'> import object </button>
-                        <button id='selectModel'> select object </button>
-                    </div>
-                    <br />
-                    <button id='save'> save project </button>
-                    <button id='import'> import project </button>
-                    <select id='selectExample'>
-                        <option class='exampleOptions' value='test-room-designer'>example1</option>
-                        <option class='exampleOptions' value='testing-room-designer'>example2</option>
-                        <option class='exampleOptions' value='test-gif-room-designer'>gif poster test</option>
-                    </select>
-                    <button id='selectExampleBtn'>load</button>
-                </div>
-                
-                <br />
                 <hr />
                 <br />
                 

@@ -1022,8 +1022,10 @@ function populateSelectedModelCategoryDisplay(selectedCategory){
         newImg.className = 'modelImg';
         newImg.src = `models/${cat}.png`;
         newImg.alt = cat;
-        newImg.setAttribute('width', '15%');
-        newImg.setAttribute('height', '100%');
+        newImg.title = cat;
+        newImg.style.padding = '5px';
+        newImg.setAttribute('width', '4%');
+        newImg.setAttribute('height', '95%');
         newImg.addEventListener('click', () => addModel(cat));
         display.appendChild(newImg);
     });
