@@ -30,6 +30,13 @@
             width: 50vw;
         }
         
+        #modelOptionsDisplay {
+            height: 80px;
+            border: 1px solid #000;
+            padding: 5px;
+            overflow: scroll;
+        }
+        
         #container {
             display: flex;
             gap: 3%;
@@ -37,6 +44,14 @@
         
         #selectExample {
             margin-left: 12px;
+        }
+        
+        .modelImg {
+            border: 1px solid #ddd;
+        }
+        
+        .modelImg:hover {
+            cursor: pointer;
         }
         
     </style>
@@ -50,32 +65,18 @@
                     <div>
                         <button id='addFloor'> add floor </button>
                         <button id='addWall'> add wall </button>
-                        <!-- <button id='addSphere'> add sphere </button> -->
                         <button id='addPoster'> add poster </button>
                         <select id='selectModelToAdd'>
-                            <option class='modelOptions' value='desk'>desk</option>
-                            <option class='modelOptions' value='table'>table</option>
-                            <option class='modelOptions' value='laptop'>laptop</option>
-                            <option class='modelOptions' value='computer'>computer</option>
-                            <option class='modelOptions' value='computer-monitor'>computer monitor</option>
-                            <option class='modelOptions' value='bed'>bed</option>
-                            <option class='modelOptions' value='beanbag-chair'>beanbag chair</option>
-                            <option class='modelOptions' value='chair'>chair</option>
-                            <option class='modelOptions' value='bookshelf'>bookshelf</option>
-                            <option class='modelOptions' value='closet'>closet</option>
-                            <option class='modelOptions' value='dresser'>dresser</option>
-                            <option class='modelOptions' value='lamp'>lamp</option>
-                            <option class='modelOptions' value='desklamp'>desklamp</option>
-                            <option class='modelOptions' value='television'>TV</option>
-                            <option class='modelOptions' value='wastebasket'>wastebasket</option>
-                            <option class='modelOptions' value='window1'>window 1</option>
-                            <option class='modelOptions' value='window2'>window 2</option>
-                            <option class='modelOptions' value='fishtank'>fishtank</option>
-                            <option class='modelOptions' value='bear-plush'>bear plushie</option>
-                            <option class='modelOptions' value='vending-machine'>vending machine</option>
+                            <option class='modelOptions' value='furniture'>furniture</option>
+                            <option class='modelOptions' value='electronics'>electronics</option>
+                            <option class='modelOptions' value='lighting'>lighting</option>
+                            <option class='modelOptions' value='accessories'>accessories</option>
+                            <option class='modelOptions' value='misc'>misc</option>
                         </select>
-                        <button id='addModel'>add</button>
                     </div>
+                    <br />
+                        <div id='modelOptionsDisplay'>
+                        </div>
                     <br />
                     <div>
                         <button id='toggleGrids'> toggle grids </button>

@@ -598,7 +598,7 @@ function populateCurrSelectedMeshControls(mesh){
     ['X', 'Y', 'Z', 'all'].forEach(axis => {
         const scaleAxisControllerInput = document.createElement('input');
         scaleAxisControllerInput.type = "radio";
-        scaleAxisControllerInput.id = `rotateControllerRadio${axis}`;
+        scaleAxisControllerInput.id = `scaleControllerRadio${axis}`;
         scaleAxisControllerInput.name = `scaleAxisControllerInput`;
         scaleAxisControllerInput.value = axis;
         
@@ -817,7 +817,7 @@ function getModelFromSelect(modelFilePath, name, parameters=null){
             processGltf(name, parameters),
             // called while loading is progressing
             function(xhr){
-                console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
             },
             // called when loading has errors
             function(error){
@@ -827,10 +827,16 @@ function getModelFromSelect(modelFilePath, name, parameters=null){
         );
     });
 }
+/*
 document.getElementById('addModel').addEventListener('click', () => {
     const selected = document.getElementById('selectModelToAdd').value;
     getModelFromSelect(`models/${selected}.gltf`, selected);
 });
+*/
+
+function addModel(nameOfSelected){
+    getModelFromSelect(`models/${nameOfSelected}.gltf`, nameOfSelected);
+}
 
 function save(){
     let name = prompt("name of file: ");
@@ -932,7 +938,11 @@ function loadObjectsFromData(data){
         setupLights(scene, lights);
     }
     
-    const objsAvailForImport = Array.from(document.querySelectorAll('.modelOptions')).map(x => x.value);
+    const objsAvailForImport = [];
+    Object.keys(categories).forEach(x => {
+        categories[x].forEach(obj => objsAvailForImport.push(obj));
+    });
+    
     data.forEach(obj => {
         if(objsAvailForImport.includes(obj.name)){
             getModelFromSelect(`models/${obj.name}.gltf`, obj.name, {
@@ -965,6 +975,63 @@ function loadObjectsFromData(data){
         }
     });
 }
+
+const categories = {
+    "furniture": [
+        "desk",
+        "chair",
+        "closet",
+        "bookshelf",
+        "bed",
+        "dresser",
+        "table",
+        "beanbag-chair",
+    ],
+    "electronics": [
+        "laptop",
+        "computer",
+        "computer-monitor",
+        "television",
+    ],
+    "lighting": [
+        "lamp",
+        "desklamp",
+    ],
+    "accessories": [
+        "fishtank",
+        "bear-plush",
+        "vending-machine",
+        "wastebasket",
+    ],
+    "misc": [
+        "window1",
+        "window2",
+    ],
+};
+function populateSelectedModelCategoryDisplay(selectedCategory){    
+    const display = document.getElementById('modelOptionsDisplay');
+    while(display.firstChild){
+        display.removeChild(display.firstChild);
+    }
+    
+    //const selectedCategory = document.getElementById('selectModelToAdd').value;
+    
+    categories[selectedCategory].forEach(cat => {
+        //<img class='modelImg' alt="desk" src='models/desk.png' width='30%' height='100%' onclick="addModel('desk')">
+        const newImg = document.createElement('img');
+        newImg.className = 'modelImg';
+        newImg.src = `models/${cat}.png`;
+        newImg.alt = cat;
+        newImg.setAttribute('width', '15%');
+        newImg.setAttribute('height', '100%');
+        newImg.addEventListener('click', () => addModel(cat));
+        display.appendChild(newImg);
+    });
+}
+document.getElementById('selectModelToAdd').addEventListener('change', (evt) => {
+    populateSelectedModelCategoryDisplay(evt.target.value);
+});
+populateSelectedModelCategoryDisplay('furniture');
 
 function importProject(){
     function getFile(e){
