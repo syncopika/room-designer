@@ -263,6 +263,7 @@ function addWall(scene, grids){
             newWall.rotation.copy(grid.rotation);
             newWall.rotateX(90 * Math.PI / 180);
             newWall.name = `wall${index}`;
+            newWall.displayName = 'wall';
             scene.add(newWall);
         }
     });
@@ -282,12 +283,14 @@ function addFloor(scene, grids){
             newFloor.rotation.copy(grid.rotation);
             newFloor.rotateX(90 * Math.PI / 180);
             newFloor.name = `floor${index}`;
+            newFloor.displayName = 'floor';
             scene.add(newFloor);
         }
     });
 }
 
 function addNewObject(mesh, modelName, objects){
+    mesh.displayName = modelName;
     // if object name already exists, assign a new name
     if(objects[mesh.name]){
         const counter = objects[mesh.name].counter;

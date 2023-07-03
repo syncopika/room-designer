@@ -181,6 +181,7 @@ function processGltf(name, parameters){
                 const geometry = child.geometry.clone();
                 const obj = new THREE.Mesh(geometry, material);
                 obj.name = child.name;
+                obj.displayName = name; // make sure all meshes get display name set because even though we also set it in addNewObject() in utils.js, the mesh passed might be an armature, which the raycast when selecting will not get.
                 
                 // reminder that rotation/position/scale fields are immutable: https://github.com/mrdoob/three.js/issues/8940
                 obj.rotation.copy(child.rotation);
@@ -199,9 +200,6 @@ function processGltf(name, parameters){
                     'default': material,
                     'toon': createMeshToonMaterial(),
                 };
-
-                //processMesh(obj, name, parameters);
-
             }else if(child.type === "Object3D" && (child.name.includes("Armature") || child.name.includes("Bone"))){
                 const obj3d = new THREE.Object3D();
                 obj3d.position.copy(child.position);
@@ -214,12 +212,11 @@ function processGltf(name, parameters){
                 }else{
                     currMeshes[child.name] = obj3d;
                 }
-                
-                //processMesh(obj3d, name, parameters);
             }
         });
 
         const meshes = Object.keys(currMeshes);
+        
         if(meshes.length > 1){
             // group multiple (non-nested) meshes together
             const group = new THREE.Group();
@@ -448,7 +445,7 @@ function populateCurrSelectedMeshControls(mesh){
     const meshName = document.createElement('p');
     meshName.style.fontWeight = 'bold';
     meshName.style.margin = "0";
-    meshName.textContent = "selected mesh name: " + mesh.name;
+    meshName.textContent = "selected mesh: " + mesh.displayName;
     container.appendChild(meshName);
     
     container.appendChild(document.createElement('br'));
@@ -753,7 +750,6 @@ function populateCurrSelectedMeshControls(mesh){
         const currColor = createColorInputBox(color);
         
         changeColorBtn.addEventListener('click', () => {
-            
             const selectedColor = currColor.value.match(/([0-9]+)/g);
             
             if(mesh.type === 'Group'){
@@ -782,7 +778,12 @@ function populateCurrSelectedMeshControls(mesh){
     if(mesh.materialOptions){
         container.appendChild(document.createElement('br'));
         container.appendChild(document.createElement('br'));
-    
+        
+        const changeMaterialSelectLabel = document.createElement('label');
+        changeMaterialSelectLabel.textContent = 'material: ';
+        changeMaterialSelectLabel.htmlFor = 'changeMaterialSelect';
+        container.appendChild(changeMaterialSelectLabel);
+        
         const changeMaterialSelect = document.createElement('select');
         changeMaterialSelect.id = 'changeMaterialSelect';
         
