@@ -181,6 +181,7 @@ function processGltf(name, parameters){
                 const geometry = child.geometry.clone();
                 const obj = new THREE.Mesh(geometry, material);
                 obj.name = child.name;
+                obj.displayName = name; // make sure all meshes get display name set because even though we also set it in addNewObject() in utils.js, the mesh passed might be an armature, which the raycast when selecting will not get.
                 
                 // reminder that rotation/position/scale fields are immutable: https://github.com/mrdoob/three.js/issues/8940
                 obj.rotation.copy(child.rotation);
@@ -199,9 +200,6 @@ function processGltf(name, parameters){
                     'default': material,
                     'toon': createMeshToonMaterial(),
                 };
-
-                //processMesh(obj, name, parameters);
-
             }else if(child.type === "Object3D" && (child.name.includes("Armature") || child.name.includes("Bone"))){
                 const obj3d = new THREE.Object3D();
                 obj3d.position.copy(child.position);
@@ -214,12 +212,11 @@ function processGltf(name, parameters){
                 }else{
                     currMeshes[child.name] = obj3d;
                 }
-                
-                //processMesh(obj3d, name, parameters);
             }
         });
 
         const meshes = Object.keys(currMeshes);
+        
         if(meshes.length > 1){
             // group multiple (non-nested) meshes together
             const group = new THREE.Group();
@@ -379,7 +376,7 @@ function rotateWheel(evt){
 }
 
 function updatePosterImage(mesh, imageUrl){
-    if(imageUrl.includes("/gif")){
+    if(imageUrl.substring(0, imageUrl.indexOf(";")).includes("/gif")){
         // treat gifs specially
         const loadGifMsg = document.getElementById("loadingGifText");
         loadGifMsg.textContent = "loading gif, this might take a bit...";
@@ -448,7 +445,7 @@ function populateCurrSelectedMeshControls(mesh){
     const meshName = document.createElement('p');
     meshName.style.fontWeight = 'bold';
     meshName.style.margin = "0";
-    meshName.textContent = "selected mesh name: " + mesh.name;
+    meshName.textContent = "selected mesh: " + mesh.displayName;
     container.appendChild(meshName);
     
     container.appendChild(document.createElement('br'));
@@ -598,7 +595,7 @@ function populateCurrSelectedMeshControls(mesh){
     ['X', 'Y', 'Z', 'all'].forEach(axis => {
         const scaleAxisControllerInput = document.createElement('input');
         scaleAxisControllerInput.type = "radio";
-        scaleAxisControllerInput.id = `rotateControllerRadio${axis}`;
+        scaleAxisControllerInput.id = `scaleControllerRadio${axis}`;
         scaleAxisControllerInput.name = `scaleAxisControllerInput`;
         scaleAxisControllerInput.value = axis;
         
@@ -643,7 +640,7 @@ function populateCurrSelectedMeshControls(mesh){
         const animations = mesh.meshAnimations;
         for(const meshName in animations){
             const meshNameElement = document.createElement('p');
-            meshNameElement.textContent = meshName + ":";
+            meshNameElement.textContent = "animations:"; //meshName + ":";
             container.appendChild(meshNameElement);
             
             // be able to toggle animations
@@ -743,8 +740,9 @@ function populateCurrSelectedMeshControls(mesh){
     }
     
     // add color change option
-    if((mesh.material && mesh.material.color) || mesh.type === 'Group'){
+    if((mesh.material && mesh.material.color) || mesh.type === 'Group'){     
         const colorChangeArea = document.getElementById("colorChangeArea");
+        colorChangeArea.appendChild(document.createElement('hr'));
         
         const changeColorBtn = document.createElement('button');
         changeColorBtn.textContent = "change color";
@@ -753,7 +751,6 @@ function populateCurrSelectedMeshControls(mesh){
         const currColor = createColorInputBox(color);
         
         changeColorBtn.addEventListener('click', () => {
-            
             const selectedColor = currColor.value.match(/([0-9]+)/g);
             
             if(mesh.type === 'Group'){
@@ -782,7 +779,12 @@ function populateCurrSelectedMeshControls(mesh){
     if(mesh.materialOptions){
         container.appendChild(document.createElement('br'));
         container.appendChild(document.createElement('br'));
-    
+        
+        const changeMaterialSelectLabel = document.createElement('label');
+        changeMaterialSelectLabel.textContent = 'material: ';
+        changeMaterialSelectLabel.htmlFor = 'changeMaterialSelect';
+        container.appendChild(changeMaterialSelectLabel);
+        
         const changeMaterialSelect = document.createElement('select');
         changeMaterialSelect.id = 'changeMaterialSelect';
         
@@ -817,7 +819,7 @@ function getModelFromSelect(modelFilePath, name, parameters=null){
             processGltf(name, parameters),
             // called while loading is progressing
             function(xhr){
-                console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
             },
             // called when loading has errors
             function(error){
@@ -827,10 +829,16 @@ function getModelFromSelect(modelFilePath, name, parameters=null){
         );
     });
 }
+/*
 document.getElementById('addModel').addEventListener('click', () => {
     const selected = document.getElementById('selectModelToAdd').value;
     getModelFromSelect(`models/${selected}.gltf`, selected);
 });
+*/
+
+function addModel(nameOfSelected){
+    getModelFromSelect(`models/${nameOfSelected}.gltf`, nameOfSelected);
+}
 
 function save(){
     let name = prompt("name of file: ");
@@ -932,7 +940,11 @@ function loadObjectsFromData(data){
         setupLights(scene, lights);
     }
     
-    const objsAvailForImport = Array.from(document.querySelectorAll('.modelOptions')).map(x => x.value);
+    const objsAvailForImport = [];
+    Object.keys(categories).forEach(x => {
+        categories[x].forEach(obj => objsAvailForImport.push(obj));
+    });
+    
     data.forEach(obj => {
         if(objsAvailForImport.includes(obj.name)){
             getModelFromSelect(`models/${obj.name}.gltf`, obj.name, {
@@ -965,6 +977,65 @@ function loadObjectsFromData(data){
         }
     });
 }
+
+const categories = {
+    "furniture": [
+        "desk",
+        "chair",
+        "closet",
+        "bookshelf",
+        "bed",
+        "dresser",
+        "table",
+        "beanbag-chair",
+    ],
+    "electronics": [
+        "laptop",
+        "computer",
+        "computer-monitor",
+        "television",
+    ],
+    "lighting": [
+        "lamp",
+        "desklamp",
+    ],
+    "accessories": [
+        "fishtank",
+        "bear-plush",
+        "vending-machine",
+        "wastebasket",
+    ],
+    "misc": [
+        "window1",
+        "window2",
+    ],
+};
+function populateSelectedModelCategoryDisplay(selectedCategory){    
+    const display = document.getElementById('modelOptionsDisplay');
+    while(display.firstChild){
+        display.removeChild(display.firstChild);
+    }
+    
+    //const selectedCategory = document.getElementById('selectModelToAdd').value;
+    
+    categories[selectedCategory].forEach(cat => {
+        //<img class='modelImg' alt="desk" src='models/desk.png' width='30%' height='100%' onclick="addModel('desk')">
+        const newImg = document.createElement('img');
+        newImg.className = 'modelImg';
+        newImg.src = `models/${cat}.png`;
+        newImg.alt = cat;
+        newImg.title = cat;
+        newImg.style.padding = '5px';
+        newImg.setAttribute('width', '4%');
+        newImg.setAttribute('height', '95%');
+        newImg.addEventListener('click', () => addModel(cat));
+        display.appendChild(newImg);
+    });
+}
+document.getElementById('selectModelToAdd').addEventListener('change', (evt) => {
+    populateSelectedModelCategoryDisplay(evt.target.value);
+});
+populateSelectedModelCategoryDisplay('furniture');
 
 function importProject(){
     function getFile(e){
