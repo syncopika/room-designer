@@ -376,7 +376,7 @@ function rotateWheel(evt){
 }
 
 function updatePosterImage(mesh, imageUrl){
-    if(imageUrl.includes("/gif")){
+    if(imageUrl.substring(0, imageUrl.indexOf(";")).includes("/gif")){
         // treat gifs specially
         const loadGifMsg = document.getElementById("loadingGifText");
         loadGifMsg.textContent = "loading gif, this might take a bit...";
