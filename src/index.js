@@ -640,7 +640,7 @@ function populateCurrSelectedMeshControls(mesh){
         const animations = mesh.meshAnimations;
         for(const meshName in animations){
             const meshNameElement = document.createElement('p');
-            meshNameElement.textContent = meshName + ":";
+            meshNameElement.textContent = "animations:"; //meshName + ":";
             container.appendChild(meshNameElement);
             
             // be able to toggle animations
@@ -740,8 +740,9 @@ function populateCurrSelectedMeshControls(mesh){
     }
     
     // add color change option
-    if((mesh.material && mesh.material.color) || mesh.type === 'Group'){
+    if((mesh.material && mesh.material.color) || mesh.type === 'Group'){     
         const colorChangeArea = document.getElementById("colorChangeArea");
+        colorChangeArea.appendChild(document.createElement('hr'));
         
         const changeColorBtn = document.createElement('button');
         changeColorBtn.textContent = "change color";

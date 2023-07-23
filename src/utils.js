@@ -383,6 +383,8 @@ function createLightsControls(lightsArray, container, turnOn){
         return;
     }
     
+     container.appendChild(document.createElement('hr'));
+    
     // create some controls for each light in lightsArray
     lightsArray.forEach((light, index) => {
         const lightName = document.createElement('p');

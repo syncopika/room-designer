@@ -18,7 +18,7 @@
             font-size: 12px;
         }
         
-        body h1, p {
+        body h1 {
             text-align: center;
         }
         
@@ -51,10 +51,6 @@
             margin-left: 10px;
         }
         
-        #selectExample {
-            margin-left: 12px;
-        }
-        
         .modelImg {
             border: 1px solid #ddd;
             display: inline-block;
@@ -68,9 +64,14 @@
     
     <body>
         <h1> room designer </h1>
-        <p>instructions: add objects to the scene and place them however you like! adding an object or clicking the 'select model' button and then clicking on an object sets the currently selected object. to move the currently selected object, click the 'toggle object move/rotate' button and then click and drag the object (you can use your mouse wheel to also rotate the object). do note that whenever adding a new object, you will most likely have to scale it.</p>
+        <p>instructions: add objects to the scene and place them however you like! </p>
+        <p> adding an object or clicking the 'select object' button and then clicking on an object sets the currently selected object. </p> 
+        <p> to move the currently selected object, click the 'toggle object move/rotate' button and then click and drag the object (you can use your mouse wheel to also rotate the object). </p>
+        <p> do note that whenever adding a new object, you will most likely have to scale it.</p>
         
         <div id='buttons'>
+            <button id='selectModel'> select object </button>
+            <button id='importModel'> import object </button>
             <button id='addFloor'> add floor </button>
             <button id='addWall'> add wall </button>
             <button id='addPoster'> add poster </button>
@@ -89,12 +90,10 @@
             <button id='toggleGrids'> toggle grids </button>
             <!--<button id='toggleLightHelpers'> toggle light helpers </button>-->
             <button id='lightControlBtn'> light controls </button>
-            <button id='importModel'> import object </button>
-            <button id='selectModel'> select object </button>
             
             <span> - </span>
 
-            <button id='save'> save project </button>
+            <button id='save'> export project </button>
             <button id='import'> import project </button>
             
             <span> - </span>
@@ -121,9 +120,6 @@
                 
         <div id='container'>
             <div id='controls'>
-                <hr />
-                <br />
-                
                 <div id='currSelectedMeshControls'>
                 </div>
                 <br />
