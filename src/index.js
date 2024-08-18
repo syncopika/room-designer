@@ -183,24 +183,41 @@ function processGltf(name, parameters){
                 obj.name = child.name;
                 obj.displayName = name; // make sure all meshes get display name set because even though we also set it in addNewObject() in utils.js, the mesh passed might be an armature, which the raycast when selecting will not get.
                 
-                // reminder that rotation/position/scale fields are immutable: https://github.com/mrdoob/three.js/issues/8940
-                obj.rotation.copy(child.rotation);
-                obj.position.copy(child.position);
-                obj.scale.copy(child.scale);
-                
                 // TODO: support animations for single meshes
                 
                 if(child.parent && currMeshes[child.parent.name]){
                     currMeshes[child.parent.name].add(obj);
+                    obj.position.copy(child.position);
+                    obj.rotation.copy(child.rotation);
+                    obj.scale.copy(child.scale);
                 }else{
                     currMeshes[child.name] = obj;
+                    
+                    if(child.parent && child.parent.type !== 'Scene'){
+                        // some models might have children that have parents that are
+                        // groups that may not exist in the model but we need to use the 
+                        // assigned parent's position/rotation/scale.
+                        //
+                        // I experienced this when exporting some .gltf files made up 
+                        // of .nif file assets that I imported into Blender (as .obj)
+                        obj.position.copy(child.parent.position);
+                        obj.rotation.copy(child.parent.rotation);
+                        obj.scale.copy(child.parent.scale);
+                    }else{
+                        obj.position.copy(child.position);
+                        obj.rotation.copy(child.rotation);
+                        obj.scale.copy(child.scale);
+                    }
                 }
                 
                 obj.materialOptions = {
                     'default': material,
                     'toon': createMeshToonMaterial(),
                 };
-            }else if(child.type === "Object3D" && (child.name.includes("Armature") || child.name.includes("Bone"))){
+            }else if(
+                child.type === "Object3D" && 
+                (child.name.includes("Armature") || child.name.includes("Bone"))
+            ){
                 const obj3d = new THREE.Object3D();
                 obj3d.position.copy(child.position);
                 obj3d.rotation.copy(child.rotation);
