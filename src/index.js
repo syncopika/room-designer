@@ -210,9 +210,21 @@ function processGltf(name, parameters){
                     }
                 }
                 
+                const toonMaterial = createMeshToonMaterial();
+                
+                if(parameters && parameters.color){
+                    toonMaterial.color.setRGB(
+                        parameters.color.r,
+                        parameters.color.g,
+                        parameters.color.b,
+                    );
+                }else{
+                    toonMaterial.color.copy(material.color);
+                }
+                
                 obj.materialOptions = {
                     'default': material,
-                    'toon': createMeshToonMaterial(),
+                    'toon': toonMaterial,
                 };
             }else if(
                 child.type === "Object3D" && 
@@ -286,7 +298,7 @@ function importModel(){
     fileHandler();
     
     function fileHandler(){
-        let input = document.createElement('input');
+        const input = document.createElement('input');
         input.type = 'file';
         input.addEventListener('change', getFile, false);
         input.click();
@@ -497,7 +509,7 @@ function populateCurrSelectedMeshControls(mesh){
         if(dir === "horizontal") moveDirInput.checked = true;
         
         const moveDirInputLabel = document.createElement('label');
-        moveDirInputLabel.for = dir;
+        moveDirInputLabel.htmlFor = dir;
         moveDirInputLabel.textContent = dir;
         
         movementDiv.appendChild(moveDirInput);
@@ -530,7 +542,7 @@ function populateCurrSelectedMeshControls(mesh){
         if(axis === 'Y') rotateControllerInput.checked = true;
         
         const rotateControllerInputLabel = document.createElement('label');
-        rotateControllerInputLabel.for = `rotateControllerInputRadio${axis}`;
+        rotateControllerInputLabel.htmlFor = `rotateControllerRadio${axis}`;
         rotateControllerInputLabel.textContent = ` ${axis} axis`;
         
         rotationDiv.appendChild(rotateControllerInputLabel);
@@ -620,7 +632,7 @@ function populateCurrSelectedMeshControls(mesh){
     });
     
     const scaleControllerInputLabel = document.createElement('label');
-    scaleControllerInputLabel.for = "scaleControllerInput";
+    scaleControllerInputLabel.htmlFor = "scaleControllerInput";
     scaleControllerInputLabel.textContent = "scale: ";
     
     scaleDiv.appendChild(scaleControllerInputLabel);
@@ -636,7 +648,7 @@ function populateCurrSelectedMeshControls(mesh){
         if(axis === 'all') scaleAxisControllerInput.checked = true;
         
         const scaleAxisControllerInputLabel = document.createElement('label');
-        scaleAxisControllerInputLabel.for = `scaleAxisControllerInput${axis}`;
+        scaleAxisControllerInputLabel.htmlFor = `scaleControllerRadio${axis}`;
         scaleAxisControllerInputLabel.textContent = ` ${axis} axis`;
         
         scaleDiv.appendChild(scaleAxisControllerInputLabel);
@@ -656,17 +668,19 @@ function populateCurrSelectedMeshControls(mesh){
             // be able to toggle animations
             const animClips = animations[meshName];
             animClips.forEach(clip => {
-                const clipName = clip.action._clip.name;
-                const isPaused = clip.action.paused;
-                const clipLabel = document.createElement('label');
-                clipLabel.textContent = clipName + ":";
-                
                 const clipCheckbox = document.createElement('input');
                 clipCheckbox.type = "checkbox";
                 clipCheckbox.checked = !isPaused;
+                clipCheckbox.id = "animationToggleCheckbox";
                 clipCheckbox.addEventListener('change', (evt) => {
                     clip.action.paused = !evt.target.checked;
                 });
+
+                const clipName = clip.action._clip.name;
+                const isPaused = clip.action.paused;
+                const clipLabel = document.createElement('label');
+                clipLabel.htmlFor = "animationToggleCheckbox";
+                clipLabel.textContent = clipName + ":";
                 
                 container.appendChild(clipLabel);
                 container.appendChild(clipCheckbox);
@@ -753,7 +767,6 @@ function populateCurrSelectedMeshControls(mesh){
     // add color change option
     if((mesh.material && mesh.material.color) || mesh.type === 'Group'){     
         const colorChangeArea = document.getElementById("colorChangeArea");
-        colorChangeArea.appendChild(document.createElement('hr'));
         
         const changeColorBtn = document.createElement('button');
         changeColorBtn.textContent = "change color";
@@ -834,12 +847,6 @@ function getModelFromSelect(modelFilePath, name, parameters=null){
         );
     });
 }
-/*
-document.getElementById('addModel').addEventListener('click', () => {
-    const selected = document.getElementById('selectModelToAdd').value;
-    getModelFromSelect(`models/${selected}.gltf`, selected);
-});
-*/
 
 function addModel(nameOfSelected){
     getModelFromSelect(`models/${nameOfSelected}.gltf`, nameOfSelected);
