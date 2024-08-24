@@ -38,6 +38,10 @@
             overflow: auto;
         }
         
+        #modelOptionsDisplay {
+          margin: 5px 0px 8px 0px;
+        }
+        
         #container {
             display: flex;
             gap: 3%;
@@ -51,6 +55,11 @@
             margin-left: 10px;
         }
         
+        #colorChangeArea {
+            display: flex;
+            align-items: center;
+        }
+        
         .modelImg {
             border: 1px solid #ddd;
             display: inline-block;
@@ -60,11 +69,21 @@
             cursor: pointer;
         }
         
+        .flexrow {
+            display: flex;
+            align-items: center;
+            margin: 3% 0px 3% 0px;
+        }
+        
+        .flexrow button {
+            margin: 0px 4px 0px 3px;
+        }
+        
     </style>
     
     <body>
         <h1> room designer </h1>
-        <p>instructions: add objects to the scene and place them however you like! </p>
+        <p> instructions: add objects to the scene and place them however you like! </p>
         <p> adding an object or clicking the 'select object' button and then clicking on an object sets the currently selected object. </p> 
         <p> to move the currently selected object, click the 'toggle object move/rotate' button and then click and drag the object (you can use your mouse wheel to also rotate the object). </p>
         <p> do note that whenever adding a new object, you will most likely have to scale it.</p>
@@ -107,22 +126,14 @@
             
             <button id='selectExampleBtn'>load</button>
             
-            <br />
-            <br />
-            
             <div id='modelOptionsDisplay'>
             </div>
-            
-            <br />
         </div>
-        
-        <br />
                 
         <div id='container'>
             <div id='controls'>
                 <div id='currSelectedMeshControls'>
                 </div>
-                <br />
                 <div id='colorChangeArea'>
                 </div>
                 <div id='lightControls'>
