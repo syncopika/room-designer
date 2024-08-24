@@ -339,7 +339,7 @@ function selectMesh(ptrEvt){
     document.getElementById('selectModel').style.border = '';
 }
 document.getElementById('selectModel').addEventListener('click', (evt) => {
-    document.getElementById('selectModel').style.border = '1px solid #aaffaa';
+    document.getElementById('selectModel').style.border = '2px solid #008000';
     renderer.domElement.addEventListener('pointerdown', selectMesh);
 });
 
@@ -427,23 +427,34 @@ function updatePosterImage(mesh, imageUrl){
     }
 }
 
-function toggleObjMoveAndRotate(evt){
-    moveObject = !moveObject;
-    controls.enabled = !moveObject;
-    objAcquired = null;
-    
-    if(moveObject){
-        evt.target.style.border = '2px solid #aaffaa';
-        renderer.domElement.addEventListener('pointerdown', moveModelStart);
-        renderer.domElement.addEventListener('pointermove', moveModelMove);
-        renderer.domElement.addEventListener('pointerup', moveModelStop);
-        renderer.domElement.addEventListener('wheel', rotateWheel);
-    }else{
-        evt.target.style.border = '';
-        renderer.domElement.removeEventListener('pointerdown', moveModelStart);
-        renderer.domElement.removeEventListener('pointermove', moveModelMove);
-        renderer.domElement.removeEventListener('pointerup', moveModelStop);
-        renderer.domElement.removeEventListener('wheel', rotateWheel);
+function toggleObjMoveAndRotate(mesh){
+    return (evt) => {
+        moveObject = !moveObject;
+        controls.enabled = !moveObject;
+        
+        if(moveObject){
+            evt.target.style.border = '2px solid #008000';
+            renderer.domElement.addEventListener('pointerdown', moveModelStart);
+            renderer.domElement.addEventListener('pointermove', moveModelMove);
+            renderer.domElement.addEventListener('pointerup', moveModelStop);
+            renderer.domElement.addEventListener('wheel', rotateWheel);
+            
+            // show helper axes
+            if(!mesh.axesHelper){
+                mesh.axesHelper = new THREE.AxesHelper(8);
+                mesh.add(mesh.axesHelper);
+            }
+            
+            mesh.axesHelper.visible = true;
+        }else{
+            evt.target.style.border = '';
+            renderer.domElement.removeEventListener('pointerdown', moveModelStart);
+            renderer.domElement.removeEventListener('pointermove', moveModelMove);
+            renderer.domElement.removeEventListener('pointerup', moveModelStop);
+            renderer.domElement.removeEventListener('wheel', rotateWheel);
+            
+            mesh.axesHelper.visible = false;
+        }
     }
 }
 
@@ -465,15 +476,16 @@ function populateCurrSelectedMeshControls(mesh){
     meshName.textContent = "selected mesh: " + mesh.displayName;
     container.appendChild(meshName);
     
-    container.appendChild(document.createElement('br'));
-    
     // control movement
+    const movementDiv = document.createElement('div');
+    movementDiv.className = 'flexrow';
+    
     const toggleMoveObjectBtn = document.createElement('button');
     toggleMoveObjectBtn.id = "toggleMoveObject";
     toggleMoveObjectBtn.textContent = "toggle object move/rotate";
     
-    toggleMoveObjectBtn.addEventListener('click', toggleObjMoveAndRotate);
-    container.appendChild(toggleMoveObjectBtn);
+    toggleMoveObjectBtn.addEventListener('click', toggleObjMoveAndRotate(mesh));
+    movementDiv.appendChild(toggleMoveObjectBtn);
     
     ["horizontal", "vertical"].forEach(dir => {
         const moveDirInput = document.createElement('input');
@@ -487,22 +499,25 @@ function populateCurrSelectedMeshControls(mesh){
         const moveDirInputLabel = document.createElement('label');
         moveDirInputLabel.for = dir;
         moveDirInputLabel.textContent = dir;
-        container.appendChild(moveDirInput);
-        container.appendChild(moveDirInputLabel);
+        
+        movementDiv.appendChild(moveDirInput);
+        movementDiv.appendChild(moveDirInputLabel);
     });
     
-    container.appendChild(document.createElement('br'));
-    container.appendChild(document.createElement('br'));
+    container.appendChild(movementDiv);
     
-    // rotation via button
+    // control rotation
+    const rotationDiv = document.createElement('div');
+    rotationDiv.className = 'flexrow';
+    
     const rotateLeftButton = document.createElement('button');
     rotateLeftButton.textContent = "rotate -";
-    container.appendChild(rotateLeftButton);
+    rotationDiv.appendChild(rotateLeftButton);
     rotateLeftButton.addEventListener('pointerdown', rotate(-1));
     
     const rotateRightButton = document.createElement('button');
     rotateRightButton.textContent = "rotate +";
-    container.appendChild(rotateRightButton);
+    rotationDiv.appendChild(rotateRightButton);
     rotateRightButton.addEventListener('pointerdown', rotate(1));
 
     ['X', 'Y', 'Z'].forEach(axis => {        
@@ -518,14 +533,16 @@ function populateCurrSelectedMeshControls(mesh){
         rotateControllerInputLabel.for = `rotateControllerInputRadio${axis}`;
         rotateControllerInputLabel.textContent = ` ${axis} axis`;
         
-        container.appendChild(rotateControllerInputLabel);
-        container.appendChild(rotateControllerInput);
+        rotationDiv.appendChild(rotateControllerInputLabel);
+        rotationDiv.appendChild(rotateControllerInput);
     });
     
-    container.appendChild(document.createElement('br'));
-    container.appendChild(document.createElement('br'));
+    container.appendChild(rotationDiv);
     
-    // control scale    
+    // control scale
+    const scaleDiv = document.createElement('div');
+    scaleDiv.className = 'flexrow';
+    
     const scaleControllerInput = document.createElement('input');
     scaleControllerInput.type = "range";
     scaleControllerInput.id = "scaleControllerInput";
@@ -606,8 +623,8 @@ function populateCurrSelectedMeshControls(mesh){
     scaleControllerInputLabel.for = "scaleControllerInput";
     scaleControllerInputLabel.textContent = "scale: ";
     
-    container.appendChild(scaleControllerInputLabel);
-    container.appendChild(scaleControllerInput);
+    scaleDiv.appendChild(scaleControllerInputLabel);
+    scaleDiv.appendChild(scaleControllerInput);
     
     ['X', 'Y', 'Z', 'all'].forEach(axis => {
         const scaleAxisControllerInput = document.createElement('input');
@@ -622,38 +639,14 @@ function populateCurrSelectedMeshControls(mesh){
         scaleAxisControllerInputLabel.for = `scaleAxisControllerInput${axis}`;
         scaleAxisControllerInputLabel.textContent = ` ${axis} axis`;
         
-        container.appendChild(scaleAxisControllerInputLabel);
-        container.appendChild(scaleAxisControllerInput);
+        scaleDiv.appendChild(scaleAxisControllerInputLabel);
+        scaleDiv.appendChild(scaleAxisControllerInput);
     });
     
-    // checkbox for toggling helper axes
-    container.appendChild(document.createElement('br'));
-    container.appendChild(document.createElement('br'));
-    
-    const toggleHelperAxes = document.createElement('input');
-    toggleHelperAxes.type = "checkbox";
-    toggleHelperAxes.name = "toggleHelperAxes";
-    toggleHelperAxes.checked = mesh.axesHelper ? mesh.axesHelper.visible === true : false;
-    toggleHelperAxes.addEventListener('input', (evt) => {
-        const showAxes = evt.target.checked;
-        if(!mesh.axesHelper){
-            mesh.axesHelper = new THREE.AxesHelper(8);
-            mesh.add(mesh.axesHelper);
-        }
-        mesh.axesHelper.visible = showAxes;
-    });
-    
-    const toggleHelperAxesLabel = document.createElement('label');
-    toggleHelperAxesLabel.textContent = "toggle helper axes";
-    toggleHelperAxesLabel.for = "toggleHelperAxes";
-    
-    container.appendChild(toggleHelperAxesLabel);
-    container.appendChild(toggleHelperAxes);
+    container.appendChild(scaleDiv);
     
     // animation control
     if(mesh.hasAnimations){
-        container.appendChild(document.createElement('br'));
-        container.appendChild(document.createElement('br'));
         const animations = mesh.meshAnimations;
         for(const meshName in animations){
             const meshNameElement = document.createElement('p');
@@ -677,8 +670,6 @@ function populateCurrSelectedMeshControls(mesh){
                 
                 container.appendChild(clipLabel);
                 container.appendChild(clipCheckbox);
-                container.appendChild(document.createElement('br'));
-                container.appendChild(document.createElement('br'));
             });
         }
     }
@@ -686,9 +677,15 @@ function populateCurrSelectedMeshControls(mesh){
     // delete option
     const deleteBtn = document.createElement('button');
     deleteBtn.id = "delete";
-    deleteBtn.textContent = "delete";
+    deleteBtn.textContent = "delete mesh";
     deleteBtn.style.color = "#ff0000";
+    deleteBtn.style.display = "block";
+    deleteBtn.style.margin = "5% 0px 5% 0px";
     deleteBtn.addEventListener('click', () => {
+        const check = confirm(`Are you sure you want to delete ${mesh.displayName}?`);
+        
+        if(!check) return;
+        
         if(mesh.name !== selectedObject.name){
             console.log("mesh to delete doesn't match selectedObject!");
             return;
@@ -703,7 +700,7 @@ function populateCurrSelectedMeshControls(mesh){
                 // TODO: maybe have a helper function that just resets all global variables relating to the currently-selected object?
                 x.click(); // set moveobject to false again before switching over to new object
             }
-            x.parentNode.removeChild(x)
+            x.parentNode.removeChild(x);
         });
 
         renderer.domElement.removeEventListener('pointerdown', moveModelStart);
@@ -721,9 +718,6 @@ function populateCurrSelectedMeshControls(mesh){
     // if it's a poster, allow the user to change image
     // TODO: if it's a poster, allow the user to add a frame for it? (need a mesh for that)
     if(mesh.name.includes("poster")){
-        container.appendChild(document.createElement('br'));
-        container.appendChild(document.createElement('br'));
-
         const changeImageBtn = document.createElement('button');
         changeImageBtn.textContent = "change image";
         
@@ -787,16 +781,12 @@ function populateCurrSelectedMeshControls(mesh){
         const colorWheel = createColorPicker(currColor);
         
         colorChangeArea.appendChild(colorWheel);
-        colorChangeArea.appendChild(document.createElement('br'));
         colorChangeArea.appendChild(currColor);
         colorChangeArea.appendChild(changeColorBtn);
     }
 
     // add material change options
     if(mesh.materialOptions){
-        container.appendChild(document.createElement('br'));
-        container.appendChild(document.createElement('br'));
-        
         const changeMaterialSelectLabel = document.createElement('label');
         changeMaterialSelectLabel.textContent = 'material: ';
         changeMaterialSelectLabel.htmlFor = 'changeMaterialSelect';
@@ -824,8 +814,6 @@ function populateCurrSelectedMeshControls(mesh){
         container.appendChild(changeMaterialBtn);
     }
 
-    container.appendChild(document.createElement('br'));
-    container.appendChild(document.createElement('br'));
     container.appendChild(deleteBtn);
 }
 
@@ -1033,10 +1021,7 @@ function populateSelectedModelCategoryDisplay(selectedCategory){
         display.removeChild(display.firstChild);
     }
     
-    //const selectedCategory = document.getElementById('selectModelToAdd').value;
-    
     categories[selectedCategory].forEach(cat => {
-        //<img class='modelImg' alt="desk" src='models/desk.png' width='30%' height='100%' onclick="addModel('desk')">
         const newImg = document.createElement('img');
         newImg.className = 'modelImg';
         newImg.src = `models/${cat}.png`;

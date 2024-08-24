@@ -386,10 +386,14 @@ function createLightsControls(lightsArray, container, turnOn){
      container.appendChild(document.createElement('hr'));
     
     // create some controls for each light in lightsArray
-    lightsArray.forEach((light, index) => {
+    lightsArray.forEach((light, index) => {      
         const lightName = document.createElement('p');
-        lightName.textContent = `directional light ${index}`;
+        lightName.textContent = `directional light ${index + 1}`;
         container.appendChild(lightName);
+        
+        const lightTogglesDiv = document.createElement('div');
+        lightTogglesDiv.style.display = 'flex';
+        lightTogglesDiv.style.alignItems = 'center';
         
         // control movement
         ['X', 'Y', 'Z'].forEach(axis => {
@@ -406,12 +410,12 @@ function createLightsControls(lightsArray, container, turnOn){
             moveLightControllerInputLabel.for = `moveLightControllerInputRadio${axis}-${index}`;
             moveLightControllerInputLabel.textContent = `${axis} axis`;
             
-            container.appendChild(moveLightControllerInputLabel);
-            container.appendChild(moveLightControllerInput);
+            lightTogglesDiv.appendChild(moveLightControllerInputLabel);
+            lightTogglesDiv.appendChild(moveLightControllerInput);
             
             const spacer = document.createElement('span');
             spacer.textContent = "|";
-            container.appendChild(spacer);
+            lightTogglesDiv.appendChild(spacer);
         });
         
         // slider for movement
@@ -451,12 +455,10 @@ function createLightsControls(lightsArray, container, turnOn){
         
         const moveLightSliderLabel = document.createElement('label');
         moveLightSliderLabel.for = `moveLightSlider${index}`;
-        moveLightSliderLabel.textContent = ": move";
+        moveLightSliderLabel.textContent = "move: ";
         
-        container.appendChild(moveLightSlider);
-        container.appendChild(moveLightSliderLabel);
-        
-        container.appendChild(document.createElement('br'));
+        lightTogglesDiv.appendChild(moveLightSliderLabel);
+        lightTogglesDiv.appendChild(moveLightSlider);
         
         // enable/disable
         const enableCheckbox = document.createElement('input');
@@ -472,8 +474,8 @@ function createLightsControls(lightsArray, container, turnOn){
         enableCheckboxLabel.textContent = "enabled: ";
         enableCheckboxLabel.for = enableCheckbox.name;
         
-        container.appendChild(enableCheckboxLabel);
-        container.appendChild(enableCheckbox);
+        lightTogglesDiv.appendChild(enableCheckboxLabel);
+        lightTogglesDiv.appendChild(enableCheckbox);
         
         /* control rotation
         ['X', 'Y', 'Z'].forEach(axis => {
@@ -510,6 +512,8 @@ function createLightsControls(lightsArray, container, turnOn){
         container.appendChild(rotateLightSlider);
         container.appendChild(rotateLightSliderLabel);
         */
+        
+        container.appendChild(lightTogglesDiv);
         
         container.appendChild(document.createElement('hr'));
     });
