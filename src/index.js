@@ -668,6 +668,12 @@ function populateCurrSelectedMeshControls(mesh){
             // be able to toggle animations
             const animClips = animations[meshName];
             animClips.forEach(clip => {
+                const clipName = clip.action._clip.name;
+                const isPaused = clip.action.paused;
+                const clipLabel = document.createElement('label');
+                clipLabel.htmlFor = "animationToggleCheckbox";
+                clipLabel.textContent = clipName + ":";
+                
                 const clipCheckbox = document.createElement('input');
                 clipCheckbox.type = "checkbox";
                 clipCheckbox.checked = !isPaused;
@@ -675,12 +681,6 @@ function populateCurrSelectedMeshControls(mesh){
                 clipCheckbox.addEventListener('change', (evt) => {
                     clip.action.paused = !evt.target.checked;
                 });
-
-                const clipName = clip.action._clip.name;
-                const isPaused = clip.action.paused;
-                const clipLabel = document.createElement('label');
-                clipLabel.htmlFor = "animationToggleCheckbox";
-                clipLabel.textContent = clipName + ":";
                 
                 container.appendChild(clipLabel);
                 container.appendChild(clipCheckbox);
