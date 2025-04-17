@@ -14,7 +14,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 //renderer.gammaOutput = true;
 //renderer.gammaFactor = 2.2;
 
-camera.position.set(0, 10, 28);
+camera.position.set(8, 12, 30);
 scene.add(camera);
 
 const raycaster = new THREE.Raycaster();
@@ -25,6 +25,7 @@ const controls = new THREE.TrackballControls(camera, renderer.domElement);
 controls.rotateSpeed = 1.2;
 controls.zoomSpeed = 1.2;
 controls.panSpeed = 0.8;
+controls.target.set(8, 0, 0);
 
 // global vars
 const objects = {};
@@ -479,9 +480,6 @@ function populateCurrSelectedMeshControls(mesh){
         x.parentNode.removeChild(x)
     });
     
-    const colorChangeContainer = document.getElementById('colorChangeArea');
-    Array.from(colorChangeContainer.children).forEach(x => x.parentNode.removeChild(x));
-    
     const meshName = document.createElement('p');
     meshName.style.fontWeight = 'bold';
     meshName.style.margin = "0";
@@ -721,12 +719,6 @@ function populateCurrSelectedMeshControls(mesh){
         renderer.domElement.removeEventListener('pointermove', moveModelMove);
         renderer.domElement.removeEventListener('pointerup', moveModelStop);
         renderer.domElement.removeEventListener('wheel', rotateWheel);
-        
-        // also clear color change area
-        const colorChangeArea = document.getElementById("colorChangeArea");
-        while(colorChangeArea.firstChild){
-            colorChangeArea.removeChild(colorChangeArea.firstChild);
-        }
     });
     
     // if it's a poster, allow the user to change image
@@ -765,37 +757,39 @@ function populateCurrSelectedMeshControls(mesh){
     }
     
     // add color change option
-    if((mesh.material && mesh.material.color) || mesh.type === 'Group'){     
-        const colorChangeArea = document.getElementById("colorChangeArea");
+    if((mesh.material && mesh.material.color) || mesh.type === 'Group'){
+        const colorChangeContainer = document.createElement('div');
+        colorChangeContainer.style.marginBottom = '10px';
         
-        const changeColorBtn = document.createElement('button');
-        changeColorBtn.textContent = "change color";
+        const changeColorLabel = document.createElement('label');
+        changeColorLabel.textContent = 'change mesh color:';
+        changeColorLabel.style.marginRight = '2px';
+        
+        const changeColorBtn = document.createElement('input');
+        changeColorBtn.type = 'color';
+        changeColorBtn.id = 'colorChangeInput';
+        
+        changeColorLabel.htmlFor = changeColorBtn.id;
         
         const color = mesh.type !== 'Group' ? mesh.material.color : mesh.children[0].material.color;
-        const currColor = createColorInputBox(color);
+        changeColorBtn.value = `#${color.getHexString()}`;
         
-        changeColorBtn.addEventListener('click', () => {
-            const selectedColor = currColor.value.match(/([0-9]+)/g);
+        changeColorBtn.addEventListener('change', (evt) => {
+            const selectedColor = evt.target.value;
             
             if(mesh.type === 'Group'){
                 mesh.children.forEach(child => {
-                    child.material.color.r = selectedColor[0] / 255;
-                    child.material.color.g = selectedColor[1] / 255;
-                    child.material.color.b = selectedColor[2] / 255;
+                    child.material.color = new THREE.Color(selectedColor);
                 });
             }else{
-                mesh.material.color.r = selectedColor[0] / 255;
-                mesh.material.color.g = selectedColor[1] / 255;
-                mesh.material.color.b = selectedColor[2] / 255;
+                mesh.material.color = new THREE.Color(selectedColor);
             }
         });
         
-        // add color picker
-        const colorWheel = createColorPicker(currColor);
+        colorChangeContainer.appendChild(changeColorLabel);
+        colorChangeContainer.appendChild(changeColorBtn);
         
-        colorChangeArea.appendChild(colorWheel);
-        colorChangeArea.appendChild(currColor);
-        colorChangeArea.appendChild(changeColorBtn);
+        container.appendChild(colorChangeContainer);
     }
 
     // add material change options
