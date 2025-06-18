@@ -47,6 +47,17 @@
             gap: 3%;
         }
         
+        @media (max-width: 1024px) {
+          #container {
+            display: block;
+          }
+          
+          #modelCanvas {
+            height: 65vh;
+            width: 90vw;
+          }
+        }
+        
         #display {
             margin: 0 auto;
         }
@@ -114,6 +125,10 @@
 
             <button id='save'> export project </button>
             <button id='import'> import project </button>
+            
+            <span> - </span>
+            
+            <button id='screenshot'> take screenshot </button>
             
             <span> - </span>
             

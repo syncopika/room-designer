@@ -1088,8 +1088,30 @@ function setupLightsController(evt){
 }
 document.getElementById('lightControlBtn').addEventListener('click', setupLightsController);
 
+// https://webglfundamentals.org/webgl/lessons/webgl-tips.html
+const saveBlob = (function(){
+  const a = document.createElement('a');
+  document.body.appendChild(a);
+  a.style.display = 'none';
+  return function saveData(blob, filename){
+    const url = window.URL.createObjectURL(blob);
+    a.href = url;
+    a.download = filename;
+    a.click();
+  }
+}());
+
+function takeCanvasScreenshot(){
+  renderer.render(scene, camera); // make sure scene is drawn first
+  document.getElementById('modelCanvas').toBlob(blob => {
+   console.log(`saving canvas screenshot`);
+   const filename = `room-designer-screenshot${Date.now()}`;
+   saveBlob(blob, `${filename}.png`);
+  });
+}
+document.getElementById('screenshot').addEventListener('click', takeCanvasScreenshot);
+
 function animate(){
-    requestAnimationFrame(animate);
     controls.update();
     
     // handle any animations + poster gifs
@@ -1113,9 +1135,11 @@ function animate(){
                 });
             }
         }
-    }    
+    }
     
     renderer.render(scene, camera);
+    
+    requestAnimationFrame(animate);
 }
 
 animate();
