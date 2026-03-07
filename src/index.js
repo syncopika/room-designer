@@ -1067,6 +1067,7 @@ function importProject(){
 document.getElementById("import").addEventListener('click', importProject);
 
 async function loadExampleProject(filename){
+    document.getElementById('highlightSelectedModel').checked = false;
     const file = await fetch(filename);
     const data = await file.json();
     loadObjectsFromData(data);
@@ -1110,6 +1111,44 @@ function takeCanvasScreenshot(){
   });
 }
 document.getElementById('screenshot').addEventListener('click', takeCanvasScreenshot);
+
+// allow zooming in on the currently selected mesh by pressing the . key (numpad decimal, not the period key) like in Blender
+document.body.addEventListener('keydown', (evt) => {
+  if(evt.key === '.'){
+    if(selectedObject){
+      console.log(`looking at ${selectedObject.name}`);
+      
+      // TODO: need a way to choose the right position coords so that the camera won't end up within the mesh
+      // even better if we have some consistent way of putting the camera in front of the mesh (get mesh forward vector?)
+      camera.position.set(selectedObject.position.x + 2, selectedObject.position.y + 1, selectedObject.position.z + 3);
+      //camera.lookAt(selectedObject.position);
+      
+      // update trackball controls target so trackball rotation will be around selected object (and the camera will face it). 
+      // clone its position, otherwise if you try to move the camera with the right mouse button, it'll move the selected object as well.
+      controls.target = selectedObject.position.clone();
+    }
+  }
+});
+
+// enable highlighting the currently selected model
+document.getElementById('highlightSelectedModel').addEventListener('change', (evt) => {
+  if(selectedObject){
+    // this is hacky but :)
+    if(selectedObject.wireframeMesh){
+      if(evt.target.checked){
+        selectedObject.wireframeMesh.visible = true;
+      }else{
+        selectedObject.wireframeMesh.visible = false;
+      }
+    }else{
+      const edges = new THREE.EdgesGeometry(selectedObject.geometry);
+      const lineMat = new THREE.LineBasicMaterial({color: 0x000000});
+      const wireframe = new THREE.LineSegments(edges, lineMat);
+      selectedObject.wireframeMesh = wireframe;
+      selectedObject.add(wireframe);
+    }
+  }
+});
 
 function animate(){
     controls.update();
